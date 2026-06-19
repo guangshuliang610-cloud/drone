@@ -1,0 +1,200 @@
+"""
+应急无人机调度系统 — 无人机管理页面
+文件：drone_page.py
+"""
+
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
+    QSpinBox, QDialog, QFormLayout, QDialogButtonBox,
+    QMessageBox, QGroupBox, QAbstractItemView
+)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
+
+from config import (
+    TEXT_MAIN, TEXT_SUB, ACCENT, SUCCESS, ERROR, WARNING,
+    DRONES_FILE
+)
+from utils import load_json, save_json, hc
+
+
+class DronePage(QWidget):
+    """无人机管理页面"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.drones_data = load_json(DRONES_FILE, {"count": 3, "drones": []})
+        self._ensure_drones()
+        self._build_ui()
+        self._refresh_table()
+
+    def _ensure_drones(self):
+        count = self.drones_data.get("count", 3)
+        drones = self.drones_data.get("drones", [])
+        while len(drones) < count:
+            idx = len(drones)
+            drones.append({
+                "id": idx + 1,
+                "name": f"无人机-{idx + 1:02d}",
+                "model": "DJI M30T",
+                "max_payload": 5.0,
+                "max_range": 15.0,
+                "max_speed": 60.0,
+                "battery": 100,
+                "status": "待命",
+            })
+        self.drones_data["drones"] = drones[:count]
+        self.drones_data["count"] = count
+
+    def get_drones(self):
+        """供外部（调度页面）读取当前无人机列表"""
+        return self.drones_data.get("drones", [])
+
+    def _build_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(20, 16, 20, 16)
+
+        header = QHBoxLayout()
+        self.title_label = QLabel("🤖 无人机管理")
+        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
+        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
+        header.addWidget(self.title_label)
+        header.addStretch()
+        self.count_label = QLabel("")
+        self.count_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        header.addWidget(self.count_label)
+        layout.addLayout(header)
+
+        count_group = QGroupBox("无人机编队设置")
+        cg = QHBoxLayout(count_group)
+        cg.setSpacing(16)
+        cg.addWidget(QLabel("无人机数量："))
+        self.count_spin = QSpinBox()
+        self.count_spin.setRange(1, 100)
+        self.count_spin.setValue(self.drones_data.get("count", 3))
+        self.count_spin.setMinimumHeight(40)
+        self.count_spin.setMinimumWidth(120)
+        cg.addWidget(self.count_spin)
+        apply_btn = QPushButton("✅ 应用数量")
+        apply_btn.setObjectName("primary")
+        apply_btn.clicked.connect(self._apply_count)
+        cg.addWidget(apply_btn)
+        cg.addStretch()
+        cg.addWidget(QLabel("批量状态："))
+        self.batch_combo = QComboBox()
+        self.batch_combo.addItems(["待命", "执行中", "充电中", "维修中", "离线"])
+        self.batch_combo.setMinimumHeight(40)
+        cg.addWidget(self.batch_combo)
+        batch_btn = QPushButton("全部应用")
+        batch_btn.clicked.connect(self._batch_status)
+        cg.addWidget(batch_btn)
+        layout.addWidget(count_group)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(10)
+        save_btn = QPushButton("💾 保存配置")
+        save_btn.setObjectName("primary")
+        save_btn.clicked.connect(self._save)
+        btn_row.addWidget(save_btn)
+        reset_btn = QPushButton("🔄 重置默认")
+        reset_btn.clicked.connect(self._reset)
+        btn_row.addWidget(reset_btn)
+        btn_row.addStretch()
+        layout.addLayout(btn_row)
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(7)
+        self.table.setHorizontalHeaderLabels([
+            "编号", "名称", "型号", "最大载荷(kg)",
+            "航程(km)", "最大速度(km/h)", "状态"
+        ])
+        h = self.table.horizontalHeader()
+        h.setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        h.setSectionResizeMode(1, QHeaderView.Stretch)
+        for i in range(2, 7):
+            h.setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setAlternatingRowColors(True)
+        self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setShowGrid(False)
+        layout.addWidget(self.table, stretch=1)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        w = self.width()
+        scale = max(0.7, min(2.0, w / 900))
+        self.title_label.setFont(QFont("Microsoft YaHei", max(14, int(18 * scale)), QFont.Bold))
+
+    def _refresh_table(self):
+        drones = self.drones_data.get("drones", [])
+        self.table.setRowCount(len(drones))
+        for i, d in enumerate(drones):
+            id_item = QTableWidgetItem(str(d.get("id", i + 1)))
+            id_item.setTextAlignment(Qt.AlignCenter)
+            id_item.setFont(QFont("Consolas", 14, QFont.Bold))
+            self.table.setItem(i, 0, id_item)
+
+            name_item = QTableWidgetItem(d.get("name", f"无人机-{i+1:02d}"))
+            name_item.setFont(QFont("Microsoft YaHei", 13))
+            self.table.setItem(i, 1, name_item)
+
+            model_item = QTableWidgetItem(d.get("model", "DJI M30T"))
+            model_item.setTextAlignment(Qt.AlignCenter)
+            self.table.setItem(i, 2, model_item)
+
+            for j, key in enumerate(["max_payload", "max_range", "max_speed"]):
+                val_item = QTableWidgetItem(f"{d.get(key, 0):.1f}")
+                val_item.setTextAlignment(Qt.AlignCenter)
+                val_item.setFont(QFont("Consolas", 14))
+                self.table.setItem(i, j + 3, val_item)
+
+            status = d.get("status", "待命")
+            st_item = QTableWidgetItem(status)
+            st_item.setTextAlignment(Qt.AlignCenter)
+            st_item.setFont(QFont("Microsoft YaHei", 13, QFont.Bold))
+            sc = {"待命": SUCCESS, "执行中": ACCENT, "充电中": WARNING, "维修中": ERROR, "离线": TEXT_SUB}
+            st_item.setForeground(hc(sc.get(status, TEXT_SUB)))
+            self.table.setItem(i, 6, st_item)
+
+        self.count_label.setText(f"共 {len(drones)} 架无人机")
+
+    def _apply_count(self):
+        self.drones_data["count"] = self.count_spin.value()
+        self._ensure_drones()
+        self._refresh_table()
+        save_json(DRONES_FILE, self.drones_data)
+
+    def _batch_status(self):
+        s = self.batch_combo.currentText()
+        for d in self.drones_data.get("drones", []):
+            d["status"] = s
+        self._refresh_table()
+        save_json(DRONES_FILE, self.drones_data)
+
+    def _save(self):
+        drones = self.drones_data.get("drones", [])
+        for i in range(min(self.table.rowCount(), len(drones))):
+            for col, key in [(1, "name"), (2, "model")]:
+                item = self.table.item(i, col)
+                if item:
+                    drones[i][key] = item.text()
+            for col, key in [(3, "max_payload"), (4, "max_range"), (5, "max_speed")]:
+                item = self.table.item(i, col)
+                if item:
+                    try:
+                        drones[i][key] = float(item.text())
+                    except ValueError:
+                        pass
+        save_json(DRONES_FILE, self.drones_data)
+        QMessageBox.information(self, "保存成功", "无人机配置已保存 ✓")
+
+    def _reset(self):
+        if QMessageBox.question(self, "确认", "恢复默认配置？",
+                                QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            self.drones_data = {"count": 3, "drones": []}
+            self._ensure_drones()
+            self.count_spin.setValue(3)
+            self._refresh_table()
+            save_json(DRONES_FILE, self.drones_data)

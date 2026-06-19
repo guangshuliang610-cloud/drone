@@ -1,0 +1,39 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# User data (sensitive)
+users.json
+remembered.json
+
+# Runtime JSON (auto-generated)
+tasks.json
+drones.json
+materials.json
+service_areas.json
+rescue_points.json
+maps.json
+algorithms.json
+
+# Temp files
+nav_patch_log.txt
