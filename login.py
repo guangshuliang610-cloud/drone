@@ -412,6 +412,7 @@ class LoginDialog(QDialog):
 
 # ── 入口 ──
 if __name__ == "__main__":
+    QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     dlg = LoginDialog()

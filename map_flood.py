@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from dispatch_page import BaseMap
 import matplotlib.pyplot as plt
@@ -167,3 +167,93 @@ class Map(BaseMap):
 
 
 
+
+    def render_plotly(self):
+        """Render Plotly Figure with contour terrain + markers"""
+        import plotly.graph_objects as go
+        x_range, y_range, z_range = self.get_bounds()
+        traces = []
+
+        gx = np.linspace(x_range[0], x_range[1], 100)
+        gy = np.linspace(y_range[0], y_range[1], 100)
+        GX, GY = np.meshgrid(gx, gy)
+        GZ = self.get_terrain_height(GX.ravel(), GY.ravel()).reshape(GX.shape)
+        GZ = np.clip(GZ, 0, z_range[1] - 4)
+
+        traces.append(go.Surface(
+            x=GX, y=GY, z=GZ,
+            colorscale=[
+                [0.0, "#1B5E20"], [0.15, "#2E7D32"], [0.3, "#388E3C"],
+                [0.45, "#43A047"], [0.6, "#66BB6A"], [0.75, "#81C784"],
+                [0.9, "#A5D6A7"], [1.0, "#C8E6C9"]
+            ],
+            opacity=0.95, showscale=False, name="地形",
+            contours=dict(
+                z=dict(
+                    show=True, usecolormap=True,
+                    highlightcolor="#ffffff", project_z=False,
+                    start=10, end=float(np.max(GZ)) - 2, size=6
+                )
+            )
+        ))
+
+        # contour lines projected to ground
+        levels = np.linspace(10, float(np.max(GZ)) - 2, 25)
+        try:
+            import matplotlib.pyplot as plt
+            cs = plt.contour(GX, GY, GZ, levels=levels)
+            for i, level in enumerate(cs.levels):
+                segs = cs.allsegs[i]
+                for seg in segs:
+                    if len(seg) > 2:
+                        traces.append(go.Scatter3d(
+                            x=seg[:, 0], y=seg[:, 1],
+                            z=np.full(len(seg), 0.5),
+                            mode="lines",
+                            line=dict(color="#8FBC8F", width=1),
+                            showlegend=False, hoverinfo="skip"
+                        ))
+            plt.close("all")
+        except Exception:
+            pass
+
+        for sa in self.get_service_areas():
+            traces.append(go.Scatter3d(
+                x=[sa["x"]], y=[sa["y"]], z=[max(sa["z"], 5)],
+                mode="markers+text",
+                marker=dict(size=10, color="#FFD700", symbol="diamond",
+                            line=dict(color="white", width=1)),
+                text=[sa["name"]], textposition="top center",
+                textfont=dict(color="#FFD700", size=10),
+                name="服务区", showlegend=True
+            ))
+
+        for rp in self.get_rescue_points():
+            traces.append(go.Scatter3d(
+                x=[rp["x"]], y=[rp["y"]], z=[max(rp["z"], 5)],
+                mode="markers+text",
+                marker=dict(size=10, color="#FF4444", symbol="cross",
+                            line=dict(color="white", width=1)),
+                text=[rp["name"]], textposition="top center",
+                textfont=dict(color="#FF4444", size=10),
+                name="救援点", showlegend=True
+            ))
+
+        fig = go.Figure(data=traces)
+        fig.update_layout(
+            scene=dict(
+                bgcolor="#12161B",
+                xaxis=dict(range=list(x_range), gridcolor="#2B3441", color="#A3AFBF", title="X (m)", showbackground=False),
+                yaxis=dict(range=list(y_range), gridcolor="#2B3441", color="#A3AFBF", title="Y (m)", showbackground=False),
+                zaxis=dict(range=list(z_range), gridcolor="#2B3441", color="#A3AFBF", title="Z (m)", showbackground=False),
+                aspectratio=dict(x=1, y=1, z=0.55),
+                camera=dict(eye=dict(x=1.4, y=-1.8, z=0.8)),
+            ),
+            paper_bgcolor="#12161B",
+            margin=dict(l=0, r=0, t=30, b=0),
+            showlegend=True,
+            legend=dict(x=0, y=1, bgcolor="rgba(26,32,40,0.8)", font=dict(color="#E6E8EC", size=11)),
+            font=dict(color="#A3AFBF"),
+            title=dict(text=self.name, font=dict(color="#E6E8EC", size=14)),
+        )
+        return fig

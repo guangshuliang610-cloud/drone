@@ -1,13 +1,25 @@
-﻿import importlib.util
+import importlib.util
 import os
 import traceback
+import json
+
+import site as _site
+for _sp in _site.getsitepackages() + [_site.getusersitepackages()]:
+    _candidate = os.path.join(_sp, "PyQt5", "Qt5", "bin")
+    if os.path.isdir(_candidate):
+        if hasattr(os, "add_dll_directory"):
+            os.add_dll_directory(_candidate)
+        os.environ["PATH"] = _candidate + os.pathsep + os.environ.get("PATH", "")
+        break
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QComboBox, QGroupBox, QTextEdit, QSplitter, QSizePolicy
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QFont
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWebChannel import QWebChannel
 
 from config import (
     DARK_BG, PANEL_BG, INPUT_BG, TEXT_MAIN, TEXT_SUB, SUCCESS, ERROR, WARNING, BORDER,
@@ -17,17 +29,9 @@ from config import (
 )
 from utils import load_json
 
-import matplotlib
-matplotlib.use("Qt5Agg")
-matplotlib.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "Arial Unicode MS"]
-matplotlib.rcParams["axes.unicode_minus"] = False
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
-
 
 class BaseMap:
-    name = "未命名地图"
+    name = "\u672a\u547d\u540d\u5730\u56fe"
     desc = ""
 
     def get_obstacles(self):
@@ -47,7 +51,7 @@ class BaseMap:
 
 
 class BaseAlgorithm:
-    name = "未命名算法"
+    name = "\u672a\u547d\u540d\u7b97\u6cd5"
     desc = ""
 
     def solve(self, drones, materials, service_areas, rescue_points, map_obj):
@@ -57,123 +61,71 @@ class BaseAlgorithm:
         pass
 
 
-class MapCanvas3D(FigureCanvasQTAgg):
+class PlotlyCanvas(QWebEngineView):
     def __init__(self, parent=None):
-        self.fig = Figure(facecolor=DARK_BG, dpi=100)
-        super().__init__(self.fig)
-        self.setParent(parent)
+        super().__init__(parent)
         self.setMinimumSize(600, 400)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
-        self._style_axes()
-        self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        self._fixed_elev = 26
-        self._azim = -60
-        self._drag_btn = None
-        self._drag_x = 0
-        self._drag_y = 0
-        self._pan_xlim = None
-        self._pan_ylim = None
-        # Disable matplotlib default 3D mouse rotation to prevent wobble
-        try:
-            self.ax.disable_mouse_rotation()
-        except Exception:
-            pass
-        self._bind_mouse()
+        self._traces = []
+        self._layout = {}
+        self._init_page()
 
-    def _bind_mouse(self):
-        canvas = self.fig.canvas
-        canvas.mpl_connect("scroll_event", self._on_scroll)
-        canvas.mpl_connect("button_press_event", self._on_press)
-        canvas.mpl_connect("button_release_event", self._on_release)
-        canvas.mpl_connect("motion_notify_event", self._on_motion)
+    def _init_page(self):
+        html = """
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>body{margin:0;padding:0;background:#12161B;overflow:hidden}
+#plot{width:100vw;height:100vh}</style>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head><body>
+<div id="plot"></div>
+<script>
+var layout = {
+  paper_bgcolor:"#12161B",
+  scene:{
+    bgcolor:"#12161B",
+    xaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"X (m)"},
+    yaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"Y (m)"},
+    zaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"Z (m)"},
+    aspectratio:{x:1,y:1,z:0.55},
+    camera:{eye:{x:1.4,y:-1.8,z:0.8}}
+  },
+  margin:{l:0,r:0,t:30,b:0},
+  showlegend:true,
+  legend:{x:0,y:1,bgcolor:"rgba(26,32,40,0.8)",font:{color:"#E6E8EC",size:11}},
+  font:{color:"#A3AFBF"}
+};
+Plotly.newPlot("plot",[],layout,{responsive:true,displayModeBar:false});
+</script></body></html>
+"""
+        self.setHtml(html)
+        self._loaded = False
+        self.loadFinished.connect(self._on_load)
 
-    def _style_axes(self):
-        ax = self.ax
-        ax.set_facecolor(INPUT_BG)
-        ax.xaxis.pane.fill = False
-        ax.yaxis.pane.fill = False
-        ax.zaxis.pane.fill = False
-        ax.xaxis.pane.set_edgecolor(BORDER)
-        ax.yaxis.pane.set_edgecolor(BORDER)
-        ax.zaxis.pane.set_edgecolor(BORDER)
-        ax.tick_params(colors=TEXT_SUB, labelsize=7)
-        ax.xaxis.label.set_color(TEXT_SUB)
-        ax.yaxis.label.set_color(TEXT_SUB)
-        ax.zaxis.label.set_color(TEXT_SUB)
-        ax.set_xlabel("X (m)", fontsize=8)
-        ax.set_ylabel("Y (m)", fontsize=8)
-        ax.set_zlabel("Z (m)", fontsize=8)
+    def _on_load(self, ok):
+        self._loaded = True
 
     def clear_plot(self):
-        self.fig.clear()
-        self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
-        self._style_axes()
-        self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        try:
-            self.ax.disable_mouse_rotation()
-        except Exception:
-            pass
-        self._bind_mouse()
+        self._traces = []
+        self._layout = {}
+        if self._loaded:
+            self.page().runJavaScript(
+                "Plotly.purge(document.getElementById(\"plot\"));"
+            )
+
+    def set_figure(self, fig_json):
+        if self._loaded:
+            js = "Plotly.react(document.getElementById(\"plot\"), %s);" % fig_json
+            self.page().runJavaScript(js)
+
+    def add_traces(self, traces_json):
+        if self._loaded:
+            js = "Plotly.addTraces(document.getElementById(\"plot\"), %s);" % traces_json
+            self.page().runJavaScript(js)
 
     def refresh(self):
-        self.draw_idle()
+        pass
 
-    def _on_press(self, event):
-        if event.inaxes != self.ax:
-            return
-        self._drag_btn = event.button
-        self._drag_x = event.x
-        self._drag_y = event.y
-        self._pan_xlim = self.ax.get_xlim()
-        self._pan_ylim = self.ax.get_ylim()
-
-    def _on_release(self, event):
-        self._drag_btn = None
-
-    def _on_motion(self, event):
-        if self._drag_btn is None or event.inaxes != self.ax:
-            return
-        dx = event.x - self._drag_x
-        dy = event.y - self._drag_y
-        if self._drag_btn == 1:
-            # Left drag: rotate around Z axis only (azimuth)
-            self._azim -= dx * 0.15
-            self.ax.view_init(elev=self._fixed_elev, azim=self._azim)
-            self._drag_x = event.x
-            self._drag_y = event.y
-            self.draw_idle()
-        elif self._drag_btn == 3:
-            # Right drag: pan (shift xlim/ylim)
-            if self._pan_xlim is None:
-                return
-            x_range = self._pan_xlim[1] - self._pan_xlim[0]
-            y_range = self._pan_ylim[1] - self._pan_ylim[0]
-            px = -dx * x_range / max(event.canvas.width(), 1) * 1.2
-            py = -dy * y_range / max(event.canvas.height(), 1) * 1.2
-            self.ax.set_xlim(self._pan_xlim[0] + px, self._pan_xlim[1] + px)
-            self.ax.set_ylim(self._pan_ylim[0] + py, self._pan_ylim[1] + py)
-            self.draw_idle()
-
-    def _on_scroll(self, event):
-        if event.button == "up":
-            factor = 0.85
-        elif event.button == "down":
-            factor = 1.18
-        else:
-            return
-        ax = self.ax
-        try:
-            xlim, ylim, zlim = ax.get_xlim(), ax.get_ylim(), ax.get_zlim()
-            xm = (xlim[0] + xlim[1]) / 2
-            ym = (ylim[0] + ylim[1]) / 2
-            zm = (zlim[0] + zlim[1]) / 2
-            ax.set_xlim(xm - (xm - xlim[0]) * factor, xm + (xlim[1] - xm) * factor)
-            ax.set_ylim(ym - (ym - ylim[0]) * factor, ym + (ylim[1] - ym) * factor)
-            ax.set_zlim(zm - (zm - zlim[0]) * factor, zm + (zlim[1] - zm) * factor)
-            self.draw_idle()
-        except Exception:
-            pass
 
 class DispatchPage(QWidget):
     def __init__(self, get_drones_func=None, parent=None):
@@ -195,11 +147,11 @@ class DispatchPage(QWidget):
         layout.setSpacing(6)
         layout.setContentsMargins(16, 10, 16, 10)
 
-        # Top bar: title + controls + status, all in one compact row
+        # Top bar: controls left, title right
         top_bar = QHBoxLayout()
         top_bar.setSpacing(10)
 
-        top_bar.addWidget(QLabel("场景:"))
+        top_bar.addWidget(QLabel("\u573a\u666f:"))
         self.map_combo = QComboBox()
         self.map_combo.setMinimumHeight(34)
         self.map_combo.setMaximumWidth(200)
@@ -208,7 +160,7 @@ class DispatchPage(QWidget):
         self.map_combo.currentIndexChanged.connect(self._on_map_changed)
         top_bar.addWidget(self.map_combo)
 
-        top_bar.addWidget(QLabel("算法:"))
+        top_bar.addWidget(QLabel("\u7b97\u6cd5:"))
         self.algo_combo = QComboBox()
         self.algo_combo.setMinimumHeight(34)
         self.algo_combo.setMaximumWidth(200)
@@ -217,56 +169,47 @@ class DispatchPage(QWidget):
         self.algo_combo.currentIndexChanged.connect(self._on_algo_changed)
         top_bar.addWidget(self.algo_combo)
 
-        self.start_btn = QPushButton("开始调度")
-        self.start_btn.setObjectName("start_btn")
+        self.start_btn = QPushButton("\u5f00\u59cb\u8c03\u5ea6")
         self.start_btn.setMinimumHeight(34)
-        self.start_btn.setMinimumWidth(120)
+        self.start_btn.setMinimumWidth(90)
+        self.start_btn.setStyleSheet(
+            "QPushButton{background:%s;color:white;border:none;border-radius:6px;font-size:14px;font-weight:bold}"
+            "QPushButton:hover{background:#3A9A7A}" % SUCCESS
+        )
         self.start_btn.clicked.connect(self._on_start)
         top_bar.addWidget(self.start_btn)
 
-        self.status_label = QLabel("就绪")
-        self.status_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 13px; background: transparent;")
+        self.status_label = QLabel("\u5c31\u7eea")
+        self.status_label.setStyleSheet(f"color:{TEXT_SUB};font-size:14px;background:transparent;")
         top_bar.addWidget(self.status_label)
 
         top_bar.addStretch()
 
-        self.title_label = QLabel("救援调度")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
+        self.title_label = QLabel("\u6551\u63f4\u8c03\u5ea6")
+        self.title_label.setStyleSheet(f"color:{TEXT_MAIN};font-size:18px;font-weight:bold;background:transparent;")
         top_bar.addWidget(self.title_label)
+
         layout.addLayout(top_bar)
 
-        # Map canvas + log splitter, map gets most space
-        splitter = QSplitter(Qt.Vertical)
-        splitter.setChildrenCollapsible(False)
-
-        self.canvas = MapCanvas3D()
-        splitter.addWidget(self.canvas)
-
-        log_widget = QWidget()
-        log_layout = QVBoxLayout(log_widget)
-        log_layout.setContentsMargins(0, 4, 0, 0)
-        log_layout.setSpacing(2)
-        log_label = QLabel("运行日志")
-        log_label.setFont(QFont("Microsoft YaHei", 11, QFont.Bold))
-        log_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
-        log_layout.addWidget(log_label)
+        # Main area: Plotly canvas + log panel
+        self.canvas = PlotlyCanvas(self)
 
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.log_text.setFont(QFont("Consolas", 10))
+        self.log_text.setMinimumHeight(80)
+        self.log_text.setMaximumHeight(140)
         self.log_text.setStyleSheet(
-            f"QTextEdit {{ background-color: {INPUT_BG}; color: {TEXT_SUB}; border: 1px solid {BORDER}; border-radius: 6px; padding: 6px; }}"
+            f"background:{INPUT_BG};color:{TEXT_SUB};border:1px solid {BORDER};border-radius:6px;font-size:12px;font-family:Consolas,monospace;padding:6px;"
         )
-        self.log_text.setMaximumHeight(120)
-        log_layout.addWidget(self.log_text)
 
-        splitter.addWidget(log_widget)
+        splitter = QSplitter(Qt.Vertical)
+        splitter.addWidget(self.canvas)
+        splitter.addWidget(self.log_text)
         splitter.setStretchFactor(0, 10)
         splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, stretch=1)
 
-        # Placeholder refs for compatibility (no longer shown)
+        # Placeholder refs for compatibility
         self.map_desc = QLabel("")
         self.algo_desc = QLabel("")
 
@@ -313,23 +256,23 @@ class DispatchPage(QWidget):
     def _on_start(self):
         self.log_text.clear()
         self._log("=" * 40)
-        self._log("调度任务启动")
+        self._log("\u8c03\u5ea6\u4efb\u52a1\u542f\u52a8")
 
         map_data = self.map_combo.currentData()
         if not map_data:
-            self._log("未选择场景")
+            self._log("\u672a\u9009\u62e9\u573a\u666f")
             return
 
         algo_data = self.algo_combo.currentData()
         if not algo_data:
-            self._log("未选择算法")
+            self._log("\u672a\u9009\u62e9\u7b97\u6cd5")
             return
 
         try:
             self.current_map = self._load_module(map_data["file"], "Map")
             self.current_algo = self._load_module(algo_data["file"], "Algorithm")
         except Exception as e:
-            self._log(f"加载失败: {e}")
+            self._log(f"\u52a0\u8f7d\u5931\u8d25: {e}")
             return
 
         materials = load_json(MATERIALS_FILE, [])
@@ -345,58 +288,50 @@ class DispatchPage(QWidget):
             rescue_points = map_rp
 
         if not drones:
-            self._log("没有无人机，请先在无人机管理页配置")
+            self._log("\u6ca1\u6709\u65e0\u4eba\u673a\uff0c\u8bf7\u5148\u5728\u65e0\u4eba\u673a\u7ba1\u7406\u9875\u914d\u7f6e")
             return
         if not materials:
-            self._log("没有物资，请先在物资管理页添加")
+            self._log("\u6ca1\u6709\u7269\u8d44\uff0c\u8bf7\u5148\u5728\u7269\u8d44\u7ba1\u7406\u9875\u6dfb\u52a0")
             return
 
         self.canvas.clear_plot()
-        try:
-            self.current_map.render_3d(self.canvas.ax)
-            self.canvas.ax.set_box_aspect((1.0, 1.0, 0.65))
-        except Exception as e:
-            self._log(f"地图渲染失败: {e}")
 
-        self.status_label.setText("调度中...")
-        self.status_label.setStyleSheet(f"color: {WARNING}; font-size: 14px; background: transparent;")
+        # Get map figure (Plotly)
+        try:
+            map_fig = self.current_map.render_plotly()
+        except Exception as e:
+            self._log(f"\u5730\u56fe\u6e32\u67d3\u5931\u8d25: {e}")
+            return
+
+        self.status_label.setText("\u8c03\u5ea6\u4e2d...")
+        self.status_label.setStyleSheet(f"color:{WARNING};font-size:14px;background:transparent;")
         self.start_btn.setEnabled(False)
 
         try:
             result = self.current_algo.solve(drones, materials, service_areas, rescue_points, self.current_map)
-            self._log(result.get("message", "调度完成"))
+            self._log(result.get("message", "\u8c03\u5ea6\u5b8c\u6210"))
 
+            # Add trajectory traces to map figure
             try:
-                self.current_algo.render_result(self.canvas.ax, result)
+                traj_traces = self.current_algo.render_plotly(result)
+                for trace in traj_traces:
+                    map_fig.add_trace(trace)
             except Exception as e:
-                self._log(f"轨迹渲染失败: {e}")
+                self._log(f"\u8f68\u8ff9\u6e32\u67d3\u5931\u8d25: {e}")
 
-            try:
-                self.canvas.ax.legend(
-                    loc="upper left",
-                    fontsize=8,
-                    facecolor=PANEL_BG,
-                    edgecolor=BORDER,
-                    labelcolor=TEXT_MAIN,
-                    prop={"family": "Microsoft YaHei"},
-                )
-            except Exception:
-                pass
+            # Send figure to canvas
+            fig_json = map_fig.to_json()
+            self.canvas.set_figure(fig_json)
 
-            self.canvas._azim = 128
-            self.canvas._fixed_elev = 26
-            self.canvas.ax.view_init(elev=26, azim=128)
-            self.canvas.refresh()
-            self.status_label.setText("调度完成")
-            self.status_label.setStyleSheet(f"color: {SUCCESS}; font-size: 14px; background: transparent;")
+            self.status_label.setText("\u8c03\u5ea6\u5b8c\u6210")
+            self.status_label.setStyleSheet(f"color:{SUCCESS};font-size:14px;background:transparent;")
 
         except Exception as e:
-            self._log(f"算法运行出错: {e}")
+            self._log(f"\u7b97\u6cd5\u8fd0\u884c\u51fa\u9519: {e}")
             self._log(traceback.format_exc())
-            self.status_label.setText("调度失败")
-            self.status_label.setStyleSheet(f"color: {ERROR}; font-size: 14px; background: transparent;")
+            self.status_label.setText("\u8c03\u5ea6\u5931\u8d25")
+            self.status_label.setStyleSheet(f"color:{ERROR};font-size:14px;background:transparent;")
 
         self.start_btn.setEnabled(True)
-        self._log("调度任务结束")
+        self._log("\u8c03\u5ea6\u4efb\u52a1\u7ed3\u675f")
         self._log("=" * 40)
-

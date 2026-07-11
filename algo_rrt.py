@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 改进RRT*算法
 文件：algo_rrt.py
 
@@ -276,3 +276,45 @@ class Algorithm(BaseAlgorithm):
             if len(xs) > 2:
                 ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=25,
                            marker="^", alpha=0.6)
+
+    def render_plotly(self, result):
+        """返回 Plotly Scatter3d 轨迹列表（RRT*折线风格）"""
+        import plotly.graph_objects as go
+        traces = []
+        for t in result.get("trajectories", []):
+            wps = t.get("waypoints", [])
+            if len(wps) < 2:
+                continue
+            xs = [w["pos"][0] for w in wps]
+            ys = [w["pos"][1] for w in wps]
+            zs = [w["pos"][2] for w in wps]
+            color = t.get("color", "#1E6FD9")
+            name = t.get("drone_name", "?")
+            # RRT* 轨迹线（较粗实线）
+            traces.append(go.Scatter3d(
+                x=xs, y=ys, z=zs, mode='lines',
+                line=dict(color=color, width=5),
+                name=name, showlegend=True
+            ))
+            # 起点
+            traces.append(go.Scatter3d(
+                x=[xs[0]], y=[ys[0]], z=[zs[0]], mode='markers',
+                marker=dict(size=7, color=color, symbol='circle',
+                            line=dict(color='white', width=1)),
+                name=f'{name} 起点', showlegend=False
+            ))
+            # 终点（五角星）
+            traces.append(go.Scatter3d(
+                x=[xs[-1]], y=[ys[-1]], z=[zs[-1]], mode='markers',
+                marker=dict(size=12, color=color, symbol='diamond',
+                            line=dict(color='white', width=1.5)),
+                name=f'{name} 投送点', showlegend=False
+            ))
+            # 中间航点（三角形）
+            if len(xs) > 2:
+                traces.append(go.Scatter3d(
+                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode='markers',
+                    marker=dict(size=5, color=color, symbol='diamond', opacity=0.7),
+                    showlegend=False
+                ))
+        return traces

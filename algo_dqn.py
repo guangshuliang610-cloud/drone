@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — DQN强化学习算法
 文件：algo_dqn.py
 
@@ -79,7 +79,7 @@ class Algorithm(BaseAlgorithm):
             goal = rp_coords[best_rp]
 
             # 生成路径（带中途调整点，模拟 DQN 的实时决策）
-            path = self._generate_dqn_path(start, goal, sa_coords, rp_coords)
+            path = self._generate_dqn_path(start, goal, sa_coords, rp_coords, map_obj)
 
             dist = sum(
                 math.sqrt(sum((path[i][j] - path[i+1][j])**2 for j in range(3)))
@@ -195,12 +195,12 @@ class Algorithm(BaseAlgorithm):
             return None
         return max(available, key=lambda r: q_table[sa_idx][r])
 
-    def _generate_dqn_path(self, start, goal, sa_coords, rp_coords):
+    def _generate_dqn_path(self, start, goal, sa_coords, rp_coords, map_obj=None):
         """生成 DQN 风格的路径（带决策中途点）"""
         sx, sy, sz = start
         gx, gy, gz = goal
 
-        mid_z = max(sz, gz) + 35
+        mid_z = self._safe_cruise_z(start, goal, map_obj, margin=25)
 
         # DQN 特征：中途有一个决策调整点（模拟实时重规划）
         mid_x = (sx + gx) / 2 + random.uniform(-20, 20)
@@ -216,6 +216,36 @@ class Algorithm(BaseAlgorithm):
         ]
 
         return path
+
+    @staticmethod
+    def _safe_cruise_z(start, end, map_obj=None, margin=20):
+        """计算安全巡航高度"""
+        import numpy as _np
+        safe_z = max(start[2], end[2]) + margin
+        if map_obj and hasattr(map_obj, 'get_terrain_height'):
+            ts = _np.linspace(0, 1, 30)
+            xs = start[0] + ts * (end[0] - start[0])
+            ys = start[1] + ts * (end[1] - start[1])
+            try:
+                hz = map_obj.get_terrain_height(xs, ys)
+                safe_z = max(safe_z, float(_np.max(hz)) + margin)
+            except Exception:
+                pass
+        if map_obj:
+            obs = map_obj.get_obstacles() if hasattr(map_obj, 'get_obstacles') else []
+            for o in obs:
+                ocx, ocy, _ = o['center']
+                ow, oh, oz = o['size']
+                for t in _np.linspace(0, 1, 10):
+                    px = start[0] + t * (end[0] - start[0])
+                    py = start[1] + t * (end[1] - start[1])
+                    if abs(px - ocx) < ow/2 + 10 and abs(py - ocy) < oh/2 + 10:
+                        safe_z = max(safe_z, oz + margin)
+                        break
+        if map_obj and hasattr(map_obj, 'get_bounds'):
+            z_max = map_obj.get_bounds()[2][1]
+            safe_z = min(safe_z, z_max - 2)
+        return safe_z
 
     def _empty_result(self, msg):
         return {
@@ -251,3 +281,45 @@ class Algorithm(BaseAlgorithm):
             if len(xs) > 2:
                 ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=40,
                            marker="D", alpha=0.7)
+
+    def render_plotly(self, result):
+        """返回 Plotly Scatter3d 轨迹列表（DQN虚线风格）"""
+        import plotly.graph_objects as go
+        traces = []
+        for t in result.get("trajectories", []):
+            wps = t.get("waypoints", [])
+            if len(wps) < 2:
+                continue
+            xs = [w["pos"][0] for w in wps]
+            ys = [w["pos"][1] for w in wps]
+            zs = [w["pos"][2] for w in wps]
+            color = t.get("color", "#1E6FD9")
+            name = t.get("drone_name", "?")
+            # DQN 轨迹线（虚线风格，表示实时决策）
+            traces.append(go.Scatter3d(
+                x=xs, y=ys, z=zs, mode='lines',
+                line=dict(color=color, width=4, dash='dash'),
+                name=name, showlegend=True
+            ))
+            # 起点
+            traces.append(go.Scatter3d(
+                x=[xs[0]], y=[ys[0]], z=[zs[0]], mode='markers',
+                marker=dict(size=7, color=color, symbol='circle',
+                            line=dict(color='white', width=1)),
+                name=f'{name} 起点', showlegend=False
+            ))
+            # 终点
+            traces.append(go.Scatter3d(
+                x=[xs[-1]], y=[ys[-1]], z=[zs[-1]], mode='markers',
+                marker=dict(size=12, color=color, symbol='diamond',
+                            line=dict(color='white', width=1.5)),
+                name=f'{name} 投送点', showlegend=False
+            ))
+            # DQN 决策点（菱形）
+            if len(xs) > 2:
+                traces.append(go.Scatter3d(
+                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode='markers',
+                    marker=dict(size=6, color=color, symbol='diamond', opacity=0.8),
+                    showlegend=False
+                ))
+        return traces

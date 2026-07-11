@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 混合启发式算法
 文件：algo_hhybrid.py
 
@@ -203,11 +203,11 @@ class Algorithm(BaseAlgorithm):
         return assignment
 
     # ── 第二阶段：蚁群算法 ──────────────────────────────
-    def _aco_path(self, start, goal, n_ants=20, n_iter=50, alpha=1.0, beta=3.0, rho=0.3):
+    def _aco_path(self, start, goal, n_ants=20, n_iter=50, alpha=1.0, beta=3.0, rho=0.3, map_obj=None):
         """蚁群算法优化路径（在起点和终点之间找最优中间航点）"""
         sx, sy, sz = start
         gx, gy, gz = goal
-        mid_z = max(sz, gz) + 30
+        mid_z = self._safe_cruise_z(start, goal, map_obj)
 
         # 候选航点（网格采样）
         n_candidates = 8
@@ -297,6 +297,36 @@ class Algorithm(BaseAlgorithm):
 
         return result_path
 
+    @staticmethod
+    def _safe_cruise_z(start, end, map_obj=None, margin=20):
+        """计算安全巡航高度"""
+        import numpy as _np
+        safe_z = max(start[2], end[2]) + margin
+        if map_obj and hasattr(map_obj, 'get_terrain_height'):
+            ts = _np.linspace(0, 1, 30)
+            xs = start[0] + ts * (end[0] - start[0])
+            ys = start[1] + ts * (end[1] - start[1])
+            try:
+                hz = map_obj.get_terrain_height(xs, ys)
+                safe_z = max(safe_z, float(_np.max(hz)) + margin)
+            except Exception:
+                pass
+        if map_obj:
+            obs = map_obj.get_obstacles() if hasattr(map_obj, 'get_obstacles') else []
+            for o in obs:
+                ocx, ocy, _ = o['center']
+                ow, oh, oz = o['size']
+                for t in _np.linspace(0, 1, 10):
+                    px = start[0] + t * (end[0] - start[0])
+                    py = start[1] + t * (end[1] - start[1])
+                    if abs(px - ocx) < ow/2 + 10 and abs(py - ocy) < oh/2 + 10:
+                        safe_z = max(safe_z, oz + margin)
+                        break
+        if map_obj and hasattr(map_obj, 'get_bounds'):
+            z_max = map_obj.get_bounds()[2][1]
+            safe_z = min(safe_z, z_max - 2)
+        return safe_z
+
     def _empty_result(self, msg):
         return {
             "trajectories": [],
@@ -331,3 +361,45 @@ class Algorithm(BaseAlgorithm):
             if len(xs) > 2:
                 ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=50,
                            marker="p", alpha=0.7)
+
+    def render_plotly(self, result):
+        """返回 Plotly Scatter3d 轨迹列表（混合启发式实线+渐变）"""
+        import plotly.graph_objects as go
+        traces = []
+        for t in result.get("trajectories", []):
+            wps = t.get("waypoints", [])
+            if len(wps) < 2:
+                continue
+            xs = [w["pos"][0] for w in wps]
+            ys = [w["pos"][1] for w in wps]
+            zs = [w["pos"][2] for w in wps]
+            color = t.get("color", "#1E6FD9")
+            name = t.get("drone_name", "?")
+            # 混合启发式轨迹线（较粗实线，GA+ACO优化路径）
+            traces.append(go.Scatter3d(
+                x=xs, y=ys, z=zs, mode='lines',
+                line=dict(color=color, width=5),
+                name=name, showlegend=True
+            ))
+            # 起点
+            traces.append(go.Scatter3d(
+                x=[xs[0]], y=[ys[0]], z=[zs[0]], mode='markers',
+                marker=dict(size=8, color=color, symbol='circle',
+                            line=dict(color='white', width=1.2)),
+                name=f'{name} 起点', showlegend=False
+            ))
+            # 终点（大五角星）
+            traces.append(go.Scatter3d(
+                x=[xs[-1]], y=[ys[-1]], z=[zs[-1]], mode='markers',
+                marker=dict(size=13, color=color, symbol='diamond',
+                            line=dict(color='white', width=1.5)),
+                name=f'{name} 投送点', showlegend=False
+            ))
+            # ACO 优化航点（五角星标记）
+            if len(xs) > 2:
+                traces.append(go.Scatter3d(
+                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode='markers',
+                    marker=dict(size=7, color=color, symbol='x', opacity=0.8),
+                    showlegend=False
+                ))
+        return traces

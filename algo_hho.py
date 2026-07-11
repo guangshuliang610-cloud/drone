@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 改进HHO算法（哈里斯鹰优化）
 文件：algo_hho.py
 
@@ -238,6 +238,36 @@ class Algorithm(BaseAlgorithm):
             "message": f"HHO优化完成，{n_drones}架无人机分配至{len(used_rps)}个救援点",
         }
 
+    @staticmethod
+    def _safe_cruise_z(start, end, map_obj=None, margin=20):
+        """计算安全巡航高度：采样沿途地形取最高点 + 安全余量"""
+        import numpy as _np
+        safe_z = max(start[2], end[2]) + margin
+        if map_obj and hasattr(map_obj, 'get_terrain_height'):
+            ts = _np.linspace(0, 1, 30)
+            xs = start[0] + ts * (end[0] - start[0])
+            ys = start[1] + ts * (end[1] - start[1])
+            try:
+                hz = map_obj.get_terrain_height(xs, ys)
+                safe_z = max(safe_z, float(_np.max(hz)) + margin)
+            except Exception:
+                pass
+        if map_obj:
+            obs = map_obj.get_obstacles() if hasattr(map_obj, 'get_obstacles') else []
+            for o in obs:
+                ocx, ocy, _ = o['center']
+                ow, oh, oz = o['size']
+                for t in _np.linspace(0, 1, 10):
+                    px = start[0] + t * (end[0] - start[0])
+                    py = start[1] + t * (end[1] - start[1])
+                    if abs(px - ocx) < ow/2 + 10 and abs(py - ocy) < oh/2 + 10:
+                        safe_z = max(safe_z, oz + margin)
+                        break
+        if map_obj and hasattr(map_obj, 'get_bounds'):
+            z_max = map_obj.get_bounds()[2][1]
+            safe_z = min(safe_z, z_max - 2)
+        return safe_z
+
     def _empty_result(self, msg):
         return {
             "trajectories": [],
@@ -269,3 +299,45 @@ class Algorithm(BaseAlgorithm):
             # 中间航点
             if len(xs) > 2:
                 ax.scatter(xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=20, marker="^", alpha=0.6)
+
+    def render_plotly(self, result):
+        """返回 Plotly Scatter3d 轨迹列表"""
+        import plotly.graph_objects as go
+        traces = []
+        for t in result.get("trajectories", []):
+            wps = t.get("waypoints", [])
+            if len(wps) < 2:
+                continue
+            xs = [w["pos"][0] for w in wps]
+            ys = [w["pos"][1] for w in wps]
+            zs = [w["pos"][2] for w in wps]
+            color = t.get("color", "#1E6FD9")
+            name = t.get("drone_name", "?")
+            # 轨迹线（实线）
+            traces.append(go.Scatter3d(
+                x=xs, y=ys, z=zs, mode='lines',
+                line=dict(color=color, width=4),
+                name=name, showlegend=True
+            ))
+            # 起点（圆圈）
+            traces.append(go.Scatter3d(
+                x=[xs[0]], y=[ys[0]], z=[zs[0]], mode='markers',
+                marker=dict(size=7, color=color, symbol='circle',
+                            line=dict(color='white', width=1)),
+                name=f'{name} 起点', showlegend=False
+            ))
+            # 终点（五角星）
+            traces.append(go.Scatter3d(
+                x=[xs[-1]], y=[ys[-1]], z=[zs[-1]], mode='markers',
+                marker=dict(size=11, color=color, symbol='diamond',
+                            line=dict(color='white', width=1.5)),
+                name=f'{name} 投送点', showlegend=False
+            ))
+            # 中间航点（小三角）
+            if len(xs) > 2:
+                traces.append(go.Scatter3d(
+                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode='markers',
+                    marker=dict(size=5, color=color, symbol='diamond', opacity=0.7),
+                    showlegend=False
+                ))
+        return traces
