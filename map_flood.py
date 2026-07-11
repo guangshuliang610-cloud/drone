@@ -145,15 +145,11 @@ class Map(BaseMap):
         GZ = self.get_terrain_height(GX.ravel(), GY.ravel()).reshape(GX.shape)
         GZ = np.clip(GZ, 0, z_range[1] - 4)
 
-        # Terrain surface — light/pastel green, reduced opacity so contour lines stand out
+        # Terrain surface — very light, just a subtle base
         traces.append(go.Surface(
             x=GX, y=GY, z=GZ,
-            colorscale=[
-                [0.0, "#3A6B4A"], [0.15, "#4E8A60"], [0.3, "#6CAE7E"],
-                [0.45, "#88C498"], [0.6, "#A4DAB2"], [0.75, "#BCE8C8"],
-                [0.9, "#D0F2D8"], [1.0, "#E4FAE8"]
-            ],
-            opacity=0.60, showscale=False, name="地形",
+            colorscale=[[0, '#E8F5E9'], [0.5, '#C8E6C9'], [1, '#A5D6A7']],
+            opacity=0.35, showscale=False, name="地形",
             contours=dict(
                 z=dict(
                     show=True, usecolormap=False,
@@ -162,33 +158,46 @@ class Map(BaseMap):
                 )
             ),
             lightposition=dict(x=0, y=0, z=1000),
-            lighting=dict(ambient=0.9, diffuse=0.3, specular=0.05, roughness=0.9)
+            lighting=dict(ambient=0.95, diffuse=0.2, specular=0.02, roughness=1.0)
         ))
 
-        # Contour lines — computed once, drawn on surface + projected to ground
-        levels = np.linspace(10, float(np.max(GZ)) - 2, 25)
+        # Green contour lines — topo_green colormap
+        levels = np.linspace(8, float(np.max(GZ)) - 1, 40)
+        topo_colors = [
+            '#1B5E20', '#2E7D32', '#43A047', '#66BB6A',
+            '#A5D6A7', '#C8E6C9', '#E8F5E9'
+        ]
         try:
             import matplotlib.pyplot as plt
+            from matplotlib.colors import LinearSegmentedColormap
+            topo_cmap = LinearSegmentedColormap.from_list('topo_green', topo_colors, N=256)
             cs = plt.contour(GX, GY, GZ, levels=levels)
+            n_levels = len(cs.levels)
             for i, level in enumerate(cs.levels):
                 segs = cs.allsegs[i]
+                if not segs:
+                    continue
+                # Color from dark green (low) to light green (high)
+                t = i / max(n_levels - 1, 1)
+                c_idx = int(t * (len(topo_colors) - 1))
+                line_color = topo_colors[min(c_idx, len(topo_colors) - 1)]
                 for seg in segs:
                     if len(seg) > 2:
-                        # White lines on terrain surface
+                        # On terrain surface
                         traces.append(go.Scatter3d(
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), level) + 0.3,
                             mode="lines",
-                            line=dict(color="#FFFFFF", width=2.5),
+                            line=dict(color=line_color, width=2),
                             showlegend=False, hoverinfo="skip"
                         ))
-                        # Light green lines projected to ground
+                        # Projected to ground
                         traces.append(go.Scatter3d(
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), 0.5),
                             mode="lines",
-                            line=dict(color="#90EE90", width=1.5),
-                            showlegend=False, hoverinfo="skip"
+                            line=dict(color=line_color, width=1.2),
+                            showlegend=False, hoverinfo="skip", opacity=0.4
                         ))
             plt.close("all")
         except Exception:
@@ -234,5 +243,4 @@ class Map(BaseMap):
             title=dict(text=self.name, font=dict(color="#E6E8EC", size=14)),
         )
         return fig
-
 
