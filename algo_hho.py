@@ -167,9 +167,9 @@ class Algorithm(BaseAlgorithm):
         n_sa = len(sa_coords)
         n_rp = len(rp_coords)
 
-        colors = ["#1E6FD9", "#2EAA6C", "#E6A817", "#E24B4A",
-                  "#9B59B6", "#00BCD4", "#FF6B6B", "#4CAF50",
-                  "#FF9800", "#3F51B5"]
+        colors = ["#FF3366", "#00E5FF", "#FFEA00", "#76FF03",
+                  "#FF6D00", "#E040FB", "#00FFC8", "#FF1744",
+                  "#7C4DFF", "#FFAB00"]
 
         # 统计每个救援点被分配了哪些物资
         rp_materials = {i: [] for i in range(n_rp)}

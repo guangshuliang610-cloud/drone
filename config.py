@@ -12,6 +12,7 @@ RESCUE_POINTS_FILE = os.path.join(BASE_DIR, "rescue_points.json")
 MAPS_FILE = os.path.join(BASE_DIR, "maps.json")
 ALGORITHMS_FILE = os.path.join(BASE_DIR, "algorithms.json")
 TASKS_FILE = os.path.join(BASE_DIR, "tasks.json")
+CONTOUR_DATA_FILE = os.path.join(BASE_DIR, "contour_data.json")
 
 # Theme colors
 DARK_BG = "#12161B"
@@ -45,21 +46,37 @@ PRIORITY_COLORS = {
 }
 
 DEFAULT_SERVICE_AREAS = [
-    {"name": "北区服务区", "x": 100.0, "y": 200.0, "z": 0.0},
-    {"name": "南区服务区", "x": 100.0, "y": -200.0, "z": 0.0},
-    {"name": "东区服务区", "x": 300.0, "y": 0.0, "z": 0.0},
-    {"name": "西区服务区", "x": -300.0, "y": 0.0, "z": 0.0},
-    {"name": "中心服务区", "x": 0.0, "y": 0.0, "z": 0.0},
+    # 城市地震场景（均在空旷道路区域，避开建筑）
+    {"name": "城北服务区", "x": 0.0, "y": 340.0, "z": 0.0, "scene": "城市地震场景"},
+    {"name": "城南服务区", "x": 0.0, "y": -340.0, "z": 0.0, "scene": "城市地震场景"},
+    {"name": "城东服务区", "x": 340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
+    {"name": "城西服务区", "x": -340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
+    {"name": "中心服务区", "x": 200.0, "y": 320.0, "z": 0.0, "scene": "城市地震场景"},
+    # 山区避障场景（z值匹配地形高程+安全余量，避开山体碰撞区）
+    {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 32.0, "scene": "山区避障场景"},
+    {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 33.0, "scene": "山区避障场景"},
+    {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 18.0, "scene": "山区避障场景"},
+    {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 35.0, "scene": "山区避障场景"},
+    {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 42.0, "scene": "山区避障场景"},
 ]
 
 DEFAULT_RESCUE_POINTS = [
-    {"name": "灾区A-居民区", "x": 150.0, "y": 300.0, "z": 50.0, "priority": 0, "priority_text": "紧急(P0)", "note": ""},
-    {"name": "灾区B-学校", "x": -200.0, "y": 150.0, "z": 30.0, "priority": 1, "priority_text": "高(P1)", "note": ""},
-    {"name": "灾区C-医院", "x": 250.0, "y": -100.0, "z": 20.0, "priority": 0, "priority_text": "紧急(P0)", "note": ""},
+    # 城市地震场景（避开建筑碰撞区）
+    {"name": "居民区A-河北区", "x": -220.0, "y": 240.0, "z": 18.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+    {"name": "医院-和平区", "x": 200.0, "y": 40.0, "z": 15.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+    {"name": "学校-南开区", "x": -220.0, "y": -260.0, "z": 16.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+    {"name": "商业街-滨江道", "x": 160.0, "y": -200.0, "z": 40.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
+    {"name": "避难所-河西区", "x": -120.0, "y": 120.0, "z": 35.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+    # 山区避障场景（z值均高于地形高程，避开山体碰撞区）
+    {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 85.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 68.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 54.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 85.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 45.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
 ]
 
 DEFAULT_MAPS = [
-    {"name": "城市地震场景", "file": "map_city_quake.py", "desc": "城市震后废墟与受损建筑环境"},
+    {"name": "城市地震场景", "file": "map_city_quake.py", "desc": "以天津为原型的北方城市震后场景，中心天塔、环形路网、分层建筑群"},
     {"name": "山区避障场景", "file": "map_flood.py", "desc": "山区山峰障碍避障场景"},
 ]
 
@@ -68,6 +85,22 @@ DEFAULT_ALGORITHMS = [
     {"name": "改进RRT*算法", "file": "algo_rrt.py", "desc": "快速探索随机树，三维动态避障"},
     {"name": "DQN强化学习", "file": "algo_dqn.py", "desc": "强化学习决策与路径规划"},
     {"name": "混合启发式算法", "file": "algo_hybrid.py", "desc": "双阶段混合启发式协同调度"},
+]
+SCENES = ["全部场景", "山区避障场景", "城市地震场景"]
+
+DEFAULT_MATERIALS = [
+    # 城市地震场景
+    {"name": "医疗急救包", "priority": 0, "priority_text": "紧急(P0)", "weight": 2.5, "quantity": 10, "service_area": "城北服务区", "rescue_point": "居民区A-河北区", "note": "", "scene": "城市地震场景"},
+    {"name": "饮用水", "priority": 0, "priority_text": "紧急(P0)", "weight": 12.0, "quantity": 20, "service_area": "城南服务区", "rescue_point": "医院-和平区", "note": "", "scene": "城市地震场景"},
+    {"name": "方便食品", "priority": 1, "priority_text": "高(P1)", "weight": 8.0, "quantity": 15, "service_area": "城东服务区", "rescue_point": "学校-南开区", "note": "", "scene": "城市地震场景"},
+    {"name": "折叠帐篷", "priority": 1, "priority_text": "高(P1)", "weight": 15.0, "quantity": 5, "service_area": "城西服务区", "rescue_point": "避难所-河西区", "note": "", "scene": "城市地震场景"},
+    {"name": "通讯设备", "priority": 2, "priority_text": "中(P2)", "weight": 3.0, "quantity": 8, "service_area": "中心服务区", "rescue_point": "商业街-滨江道", "note": "", "scene": "城市地震场景"},
+    # 山区避障场景
+    {"name": "救援绳索", "priority": 0, "priority_text": "紧急(P0)", "weight": 5.0, "quantity": 6, "service_area": "北部营地", "rescue_point": "山腰受困点", "note": "", "scene": "山区避障场景"},
+    {"name": "医疗急救包", "priority": 0, "priority_text": "紧急(P0)", "weight": 2.5, "quantity": 8, "service_area": "南部营地", "rescue_point": "山谷被困村民", "note": "", "scene": "山区避障场景"},
+    {"name": "压缩食品", "priority": 1, "priority_text": "高(P1)", "weight": 6.0, "quantity": 12, "service_area": "东部营地", "rescue_point": "山脊求救点", "note": "", "scene": "山区避障场景"},
+    {"name": "保暖毯", "priority": 1, "priority_text": "高(P1)", "weight": 1.5, "quantity": 20, "service_area": "西部营地", "rescue_point": "山顶被困人员", "note": "", "scene": "山区避障场景"},
+    {"name": "照明设备", "priority": 2, "priority_text": "中(P2)", "weight": 3.0, "quantity": 10, "service_area": "中央补给站", "rescue_point": "河谷受困点", "note": "", "scene": "山区避障场景"},
 ]
 
 GLOBAL_STYLE = f"""
@@ -222,4 +255,6 @@ QSplitter::handle:horizontal {{ width: 3px; }}
 QSplitter::handle:vertical {{ height: 3px; }}
 QSplitter::handle:hover {{ background-color: {ACCENT}; }}
 """
+
+
 

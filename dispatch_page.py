@@ -62,7 +62,7 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self.fig = Figure(facecolor=DARK_BG, dpi=100)
         super().__init__(self.fig)
         self.setParent(parent)
-        self.setMinimumSize(400, 300)
+        self.setMinimumSize(600, 400)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
         self._style_axes()
@@ -112,65 +112,51 @@ class DispatchPage(QWidget):
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(6)
+        layout.setContentsMargins(16, 10, 16, 10)
 
-        header = QHBoxLayout()
-        self.title_label = QLabel("救援调度")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
-        header.addStretch()
-        self.status_label = QLabel("就绪")
-        self.status_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
-        header.addWidget(self.status_label)
-        layout.addLayout(header)
+        # Top bar: title + controls + status, all in one compact row
+        top_bar = QHBoxLayout()
+        top_bar.setSpacing(10)
 
-        control_group = QGroupBox("调度参数")
-        cg_layout = QVBoxLayout(control_group)
-        cg_layout.setSpacing(14)
-
-        map_row = QHBoxLayout()
-        map_row.addWidget(QLabel("选择场景:"))
+        top_bar.addWidget(QLabel("场景:"))
         self.map_combo = QComboBox()
-        self.map_combo.setMinimumHeight(40)
+        self.map_combo.setMinimumHeight(34)
+        self.map_combo.setMaximumWidth(200)
         for m in self.maps:
             self.map_combo.addItem(m["name"], m)
         self.map_combo.currentIndexChanged.connect(self._on_map_changed)
-        map_row.addWidget(self.map_combo, stretch=1)
-        self.map_desc = QLabel("")
-        self.map_desc.setStyleSheet(f"color: {TEXT_SUB}; font-size: 13px; background: transparent;")
-        self.map_desc.setWordWrap(True)
-        map_row.addWidget(self.map_desc, stretch=1)
-        cg_layout.addLayout(map_row)
+        top_bar.addWidget(self.map_combo)
 
-        algo_row = QHBoxLayout()
-        algo_row.addWidget(QLabel("选择算法:"))
+        top_bar.addWidget(QLabel("算法:"))
         self.algo_combo = QComboBox()
-        self.algo_combo.setMinimumHeight(40)
+        self.algo_combo.setMinimumHeight(34)
+        self.algo_combo.setMaximumWidth(200)
         for a in self.algorithms:
             self.algo_combo.addItem(a["name"], a)
         self.algo_combo.currentIndexChanged.connect(self._on_algo_changed)
-        algo_row.addWidget(self.algo_combo, stretch=1)
-        self.algo_desc = QLabel("")
-        self.algo_desc.setStyleSheet(f"color: {TEXT_SUB}; font-size: 13px; background: transparent;")
-        self.algo_desc.setWordWrap(True)
-        algo_row.addWidget(self.algo_desc, stretch=1)
-        cg_layout.addLayout(algo_row)
+        top_bar.addWidget(self.algo_combo)
 
-        btn_row = QHBoxLayout()
         self.start_btn = QPushButton("开始调度")
         self.start_btn.setObjectName("start_btn")
-        self.start_btn.setMinimumHeight(50)
-        self.start_btn.setMinimumWidth(200)
+        self.start_btn.setMinimumHeight(34)
+        self.start_btn.setMinimumWidth(120)
         self.start_btn.clicked.connect(self._on_start)
-        btn_row.addStretch()
-        btn_row.addWidget(self.start_btn)
-        btn_row.addStretch()
-        cg_layout.addLayout(btn_row)
+        top_bar.addWidget(self.start_btn)
 
-        layout.addWidget(control_group)
+        self.status_label = QLabel("就绪")
+        self.status_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 13px; background: transparent;")
+        top_bar.addWidget(self.status_label)
 
+        top_bar.addStretch()
+
+        self.title_label = QLabel("救援调度")
+        self.title_label.setFont(QFont("Microsoft YaHei", 15, QFont.Bold))
+        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
+        top_bar.addWidget(self.title_label)
+        layout.addLayout(top_bar)
+
+        # Map canvas + log splitter, map gets most space
         splitter = QSplitter(Qt.Vertical)
         splitter.setChildrenCollapsible(False)
 
@@ -179,24 +165,30 @@ class DispatchPage(QWidget):
 
         log_widget = QWidget()
         log_layout = QVBoxLayout(log_widget)
-        log_layout.setContentsMargins(0, 8, 0, 0)
+        log_layout.setContentsMargins(0, 4, 0, 0)
+        log_layout.setSpacing(2)
         log_label = QLabel("运行日志")
-        log_label.setFont(QFont("Microsoft YaHei", 12, QFont.Bold))
+        log_label.setFont(QFont("Microsoft YaHei", 11, QFont.Bold))
         log_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
         log_layout.addWidget(log_label)
 
         self.log_text = QTextEdit()
         self.log_text.setReadOnly(True)
-        self.log_text.setFont(QFont("Consolas", 11))
+        self.log_text.setFont(QFont("Consolas", 10))
         self.log_text.setStyleSheet(
-            f"QTextEdit {{ background-color: {INPUT_BG}; color: {TEXT_SUB}; border: 1px solid {BORDER}; border-radius: 8px; padding: 8px; }}"
+            f"QTextEdit {{ background-color: {INPUT_BG}; color: {TEXT_SUB}; border: 1px solid {BORDER}; border-radius: 6px; padding: 6px; }}"
         )
-        self.log_text.setMaximumHeight(180)
+        self.log_text.setMaximumHeight(120)
         log_layout.addWidget(self.log_text)
 
         splitter.addWidget(log_widget)
-        splitter.setSizes([600, 180])
+        splitter.setStretchFactor(0, 10)
+        splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, stretch=1)
+
+        # Placeholder refs for compatibility (no longer shown)
+        self.map_desc = QLabel("")
+        self.algo_desc = QLabel("")
 
         self._on_map_changed()
         self._on_algo_changed()
@@ -325,3 +317,4 @@ class DispatchPage(QWidget):
         self.start_btn.setEnabled(True)
         self._log("调度任务结束")
         self._log("=" * 40)
+

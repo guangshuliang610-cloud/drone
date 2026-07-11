@@ -33,9 +33,9 @@ class Algorithm(BaseAlgorithm):
         obstacles = map_obj.get_obstacles() if map_obj else []
         bounds = map_obj.get_bounds() if map_obj else ((-500, 500), (-500, 500), (0, 200))
 
-        colors = ["#1E6FD9", "#2EAA6C", "#E6A817", "#E24B4A",
-                  "#9B59B6", "#00BCD4", "#FF6B6B", "#4CAF50",
-                  "#FF9800", "#3F51B5"]
+        colors = ["#FF3366", "#00E5FF", "#FFEA00", "#76FF03",
+                  "#FF6D00", "#E040FB", "#00FFC8", "#FF1744",
+                  "#7C4DFF", "#FFAB00"]
 
         trajectories = []
         total_time = 0.0

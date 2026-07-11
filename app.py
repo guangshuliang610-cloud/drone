@@ -1,4 +1,4 @@
-"""
+﻿"""
 应急无人机调度系统 — 主控台
 文件：app.py
 说明：主窗口，整合所有页面，左侧可折叠导航栏，右侧内容区
@@ -79,8 +79,7 @@ class MainWindow(QMainWindow):
             ("🤖", "无人机管理"),
             ("🚀", "救援调度"),
             ("🧍", "任务管理"),
-            ("🗺", "路径规划"),
-        ]
+]
         for icon_txt, text in nav_items:
             btn = QPushButton(f"  {icon_txt}  {text}")
             btn.setObjectName("sidebar")
@@ -127,8 +126,8 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.area_page)
         self.stack.addWidget(self.rescue_page)
         self.stack.addWidget(self.drone_page)
-        self.stack.addWidget(self.task_page)
         self.stack.addWidget(self.dispatch_page)
+        self.stack.addWidget(self.task_page)
 
         root.addWidget(self.stack, stretch=1)
 
@@ -143,9 +142,9 @@ class MainWindow(QMainWindow):
                 if i == 0:
                     self.material_page.reload_data()
                 if i == 4:
-                    self.task_page.reload_config()
-                if i == 5:
                     self.dispatch_page.reload_config()
+                if i == 5:
+                    self.task_page.reload_config()
             else:
                 btn.setChecked(False)
 
@@ -156,3 +155,4 @@ if __name__ == "__main__":
     win = MainWindow()
     win.show()
     sys.exit(app.exec_())
+

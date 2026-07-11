@@ -41,9 +41,9 @@ class Algorithm(BaseAlgorithm):
         )
 
         # ── 使用训练好的 Q-table 规划路径 ──
-        colors = ["#1E6FD9", "#2EAA6C", "#E6A817", "#E24B4A",
-                  "#9B59B6", "#00BCD4", "#FF6B6B", "#4CAF50",
-                  "#FF9800", "#3F51B5"]
+        colors = ["#FF3366", "#00E5FF", "#FFEA00", "#76FF03",
+                  "#FF6D00", "#E040FB", "#00FFC8", "#FF1744",
+                  "#7C4DFF", "#FFAB00"]
 
         # 物资分配
         rp_materials = {i: [] for i in range(n_rp)}

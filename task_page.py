@@ -1,4 +1,4 @@
-"""
+﻿"""
 ????????? ? ??????
 ???task_page.py
 ???????????????? ? ????? ? ???? ? ?? ? ??/???
@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 from config import (
-    DARK_BG, PANEL_BG, ACCENT, ACCENT_DARK, BORDER,
+    SCENES, DARK_BG, PANEL_BG, ACCENT, ACCENT_DARK, BORDER,
     TEXT_MAIN, TEXT_SUB, SUCCESS, ERROR, WARNING,
     PRIORITY_MAP, TASKS_FILE, MAPS_FILE, ALGORITHMS_FILE,
     DEFAULT_MAPS, DEFAULT_ALGORITHMS, BASE_DIR
@@ -175,11 +175,11 @@ class TaskEditDialog(QDialog):
 class TaskPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.tasks = load_json(TASKS_FILE, [])
+        self.all_tasks = load_json(TASKS_FILE, [])
         self.maps = load_json(MAPS_FILE, DEFAULT_MAPS)
         self.algorithms = load_json(ALGORITHMS_FILE, DEFAULT_ALGORITHMS)
         self._build_ui()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -191,6 +191,15 @@ class TaskPage(QWidget):
         self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
         self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
         header.addWidget(self.title_label)
+
+        self.scene_combo = QComboBox()
+        self.scene_combo.addItems(SCENES)
+        self.scene_combo.setMinimumHeight(34)
+        self.scene_combo.setMaximumWidth(180)
+        self.scene_combo.currentTextChanged.connect(self._on_scene_changed)
+        header.addWidget(QLabel("场景:"))
+        header.addWidget(self.scene_combo)
+
         header.addStretch()
         self.stats_label = QLabel("")
         self.stats_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
@@ -267,8 +276,8 @@ class TaskPage(QWidget):
     def reload_config(self):
         self.maps = load_json(MAPS_FILE, DEFAULT_MAPS)
         self.algorithms = load_json(ALGORITHMS_FILE, DEFAULT_ALGORITHMS)
-        self.tasks = load_json(TASKS_FILE, [])
-        self._refresh_table()
+        self.all_tasks = load_json(TASKS_FILE, [])
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _selected_task(self):
         row = self.table.currentRow()
@@ -284,7 +293,19 @@ class TaskPage(QWidget):
         return None
 
     def _save(self):
-        save_json(TASKS_FILE, self.tasks)
+        save_json(TASKS_FILE, self.all_tasks)
+
+
+    def _on_scene_changed(self, scene):
+        if scene == "全部场景":
+            self.tasks = self.all_tasks[:]
+        else:
+            self.tasks = [t for t in self.all_tasks if t.get("scene", "") == scene]
+        self._refresh_table()
+
+    def _current_scene(self):
+        scene = self.scene_combo.currentText()
+        return scene if scene != "全部场景" else "城市地震场景"
 
     def _refresh_table(self):
         self.table.setRowCount(len(self.tasks))
@@ -317,7 +338,7 @@ class TaskPage(QWidget):
             if s in stats:
                 stats[s] += 1
         self.stats_label.setText(
-            f"任务总数：{len(self.tasks)} ｜ "
+            f"任务总数：{len(self.all_tasks)}（当前场景：{len(self.tasks)}） ｜ "
             f"待执行：{stats['待执行']} ｜ "
             f"执行中：{stats['执行中']} ｜ "
             f"已完成：{stats['已完成']}"
@@ -397,15 +418,16 @@ class TaskPage(QWidget):
                 "end_name": data.get("end_name", ""),
                 "weight": float(data.get("weight", 1.0)),
                 "note": data.get("note", ""),
+                "scene": self._current_scene(),
                 "created_at": _now_str(),
                 "completed_at": None,
                 "route": None,
                 "logs": [],
             }
             self._append_log(task, "创建任务", f"创建任务《{task['name']}》")
-            self.tasks.append(task)
+            self.all_tasks.append(task)
             self._save()
-            self._refresh_table()
+            self._on_scene_changed(self.scene_combo.currentText())
 
     def _edit_task(self):
         task = self._selected_task()
@@ -431,7 +453,7 @@ class TaskPage(QWidget):
             })
             self._append_log(task, "修改任务", "修改任务配置")
             self._save()
-            self._refresh_table()
+            self._on_scene_changed(self.scene_combo.currentText())
 
     def _delete_task(self):
         task = self._selected_task()
@@ -439,9 +461,9 @@ class TaskPage(QWidget):
             QMessageBox.information(self, "提示", "请先选择一条任务")
             return
         if QMessageBox.question(self, "确认", f"删除任务《{task.get('name', '')}》？", QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
-            self.tasks = [t for t in self.tasks if int(t.get("id", -1)) != int(task.get("id", -2))]
+            self.all_tasks = [t for t in self.all_tasks if int(t.get("id", -1)) != int(task.get("id", -2))]
             self._save()
-            self._refresh_table()
+            self._on_scene_changed(self.scene_combo.currentText())
 
     def _start_task(self):
         task = self._selected_task()
@@ -454,7 +476,7 @@ class TaskPage(QWidget):
         task["status"] = "执行中"
         self._append_log(task, "开始执行", "任务进入执行状态")
         self._save()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _pause_task(self):
         task = self._selected_task()
@@ -466,7 +488,7 @@ class TaskPage(QWidget):
         task["status"] = "暂停中"
         self._append_log(task, "暂停任务", "任务已暂停")
         self._save()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _complete_task(self):
         task = self._selected_task()
@@ -479,7 +501,7 @@ class TaskPage(QWidget):
         task["completed_at"] = _now_str()
         self._append_log(task, "完成任务", "任务执行完成并归档")
         self._save()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _cancel_task(self):
         task = self._selected_task()
@@ -493,7 +515,7 @@ class TaskPage(QWidget):
         task["status"] = "已取消"
         self._append_log(task, "取消任务", "任务被取消")
         self._save()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
 
     def _generate_route(self):
         task = self._selected_task()
@@ -578,7 +600,7 @@ class TaskPage(QWidget):
         }
         self._append_log(task, "生成路径", f"使用算法《{default_result['algo_name']}》生成路径")
         self._save()
-        self._refresh_table()
+        self._on_scene_changed(self.scene_combo.currentText())
         QMessageBox.information(self, "完成", f"路径已生成\n预计时间：{float(task['route']['total_time'])/60:.1f} 分钟")
 
     def _compare_route(self):
@@ -635,3 +657,10 @@ class TaskPage(QWidget):
         lay.addWidget(btns)
 
         dlg.exec_()
+
+
+
+
+
+
+
