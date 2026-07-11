@@ -133,41 +133,6 @@ class Map(BaseMap):
             }
         }
 
-    def render_3d(self, ax):
-        x_range, y_range, z_range = self.get_bounds()
-
-        gx = np.linspace(x_range[0], x_range[1], 170)
-        gy = np.linspace(y_range[0], y_range[1], 170)
-        GX, GY = np.meshgrid(gx, gy)
-        terrain = self.get_terrain_height(GX, GY)
-
-        # Standard topographic-like contour colors:
-        # low elevation green -> yellow -> brown -> high elevation gray-white
-        topo_cmap = LinearSegmentedColormap.from_list(
-            "topo_green",
-            ["#1B5E20", "#2E7D32", "#43A047", "#66BB6A", "#A5D6A7", "#C8E6C9", "#E8F5E9"],
-            N=256,
-        )
-
-        levels = np.linspace(8, float(np.max(terrain)) - 1, 40)
-        if levels.size > 1:
-            contour_colors = topo_cmap(np.linspace(0.05, 0.98, len(levels)))
-            ax.contour3D(GX, GY, terrain, levels=levels, colors=contour_colors, linewidths=1.3, alpha=1.0)
-            # Ground plane (opaque, no shadow projection)
-            gx_flat = np.linspace(x_range[0], x_range[1], 8)
-            gy_flat = np.linspace(y_range[0], y_range[1], 8)
-            GX0, GY0 = np.meshgrid(gx_flat, gy_flat)
-            ax.plot_wireframe(GX0, GY0, np.zeros_like(GX0), color="#2A3848", alpha=0.3, linewidth=0.3)
-
-        ax.set_xlim(*x_range)
-        ax.set_ylim(*y_range)
-        ax.set_zlim(*z_range)
-        ax.set_title(self.name, fontsize=10, color="#E6E8EC", pad=8)
-
-
-
-
-
     def render_plotly(self):
         """Render Plotly Figure with contour terrain + markers"""
         import plotly.graph_objects as go
@@ -180,24 +145,27 @@ class Map(BaseMap):
         GZ = self.get_terrain_height(GX.ravel(), GY.ravel()).reshape(GX.shape)
         GZ = np.clip(GZ, 0, z_range[1] - 4)
 
+        # Terrain surface — light/pastel green, reduced opacity so contour lines stand out
         traces.append(go.Surface(
             x=GX, y=GY, z=GZ,
             colorscale=[
-                [0.0, "#1B5E20"], [0.15, "#2E7D32"], [0.3, "#388E3C"],
-                [0.45, "#43A047"], [0.6, "#66BB6A"], [0.75, "#81C784"],
-                [0.9, "#A5D6A7"], [1.0, "#C8E6C9"]
+                [0.0, "#3A6B4A"], [0.15, "#4E8A60"], [0.3, "#6CAE7E"],
+                [0.45, "#88C498"], [0.6, "#A4DAB2"], [0.75, "#BCE8C8"],
+                [0.9, "#D0F2D8"], [1.0, "#E4FAE8"]
             ],
-            opacity=0.95, showscale=False, name="地形",
+            opacity=0.60, showscale=False, name="地形",
             contours=dict(
                 z=dict(
-                    show=True, usecolormap=True,
+                    show=True, usecolormap=False,
                     highlightcolor="#ffffff", project_z=False,
                     start=10, end=float(np.max(GZ)) - 2, size=6
                 )
-            )
+            ),
+            lightposition=dict(x=0, y=0, z=1000),
+            lighting=dict(ambient=0.9, diffuse=0.3, specular=0.05, roughness=0.9)
         ))
 
-        # contour lines projected to ground
+        # Contour lines — computed once, drawn on surface + projected to ground
         levels = np.linspace(10, float(np.max(GZ)) - 2, 25)
         try:
             import matplotlib.pyplot as plt
@@ -206,11 +174,20 @@ class Map(BaseMap):
                 segs = cs.allsegs[i]
                 for seg in segs:
                     if len(seg) > 2:
+                        # White lines on terrain surface
+                        traces.append(go.Scatter3d(
+                            x=seg[:, 0], y=seg[:, 1],
+                            z=np.full(len(seg), level) + 0.3,
+                            mode="lines",
+                            line=dict(color="#FFFFFF", width=2.5),
+                            showlegend=False, hoverinfo="skip"
+                        ))
+                        # Light green lines projected to ground
                         traces.append(go.Scatter3d(
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), 0.5),
                             mode="lines",
-                            line=dict(color="#8FBC8F", width=1),
+                            line=dict(color="#90EE90", width=1.5),
                             showlegend=False, hoverinfo="skip"
                         ))
             plt.close("all")
@@ -257,3 +234,5 @@ class Map(BaseMap):
             title=dict(text=self.name, font=dict(color="#E6E8EC", size=14)),
         )
         return fig
+
+
