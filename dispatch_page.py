@@ -67,7 +67,21 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        self.fig.canvas.mpl_connect("scroll_event", self._on_scroll)
+        self._fixed_elev = 26
+        self._azim = -60
+        self._drag_btn = None
+        self._drag_x = 0
+        self._drag_y = 0
+        self._pan_xlim = None
+        self._pan_ylim = None
+        self._bind_mouse()
+
+    def _bind_mouse(self):
+        canvas = self.fig.canvas
+        canvas.mpl_connect("scroll_event", self._on_scroll)
+        canvas.mpl_connect("button_press_event", self._on_press)
+        canvas.mpl_connect("button_release_event", self._on_release)
+        canvas.mpl_connect("motion_notify_event", self._on_motion)
 
     def _style_axes(self):
         ax = self.ax
@@ -91,7 +105,66 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        self.fig.canvas.mpl_connect("scroll_event", self._on_scroll)
+        self._bind_mouse()
+
+    def refresh(self):
+        self.draw_idle()
+
+    def _on_press(self, event):
+        if event.inaxes != self.ax:
+            return
+        self._drag_btn = event.button
+        self._drag_x = event.x
+        self._drag_y = event.y
+        self._pan_xlim = self.ax.get_xlim()
+        self._pan_ylim = self.ax.get_ylim()
+
+    def _on_release(self, event):
+        self._drag_btn = None
+
+    def _on_motion(self, event):
+        if self._drag_btn is None or event.inaxes != self.ax:
+            return
+        dx = event.x - self._drag_x
+        dy = event.y - self._drag_y
+        if self._drag_btn == 1:
+            # Left drag: rotate around Z axis only (azimuth)
+            self._azim -= dx * 0.4
+            self.ax.view_init(elev=self._fixed_elev, azim=self._azim)
+            self._drag_x = event.x
+            self._drag_y = event.y
+            self.draw_idle()
+        elif self._drag_btn == 3:
+            # Right drag: pan (shift xlim/ylim)
+            if self._pan_xlim is None:
+                return
+            x_range = self._pan_xlim[1] - self._pan_xlim[0]
+            y_range = self._pan_ylim[1] - self._pan_ylim[0]
+            px = -dx * x_range / max(event.canvas.width(), 1) * 1.2
+            py = -dy * y_range / max(event.canvas.height(), 1) * 1.2
+            self.ax.set_xlim(self._pan_xlim[0] + px, self._pan_xlim[1] + px)
+            self.ax.set_ylim(self._pan_ylim[0] + py, self._pan_ylim[1] + py)
+            self.draw_idle()
+
+    def _on_scroll(self, event):
+        if event.button == "up":
+            factor = 0.85
+        elif event.button == "down":
+            factor = 1.18
+        else:
+            return
+        ax = self.ax
+        try:
+            xlim, ylim, zlim = ax.get_xlim(), ax.get_ylim(), ax.get_zlim()
+            xm = (xlim[0] + xlim[1]) / 2
+            ym = (ylim[0] + ylim[1]) / 2
+            zm = (zlim[0] + zlim[1]) / 2
+            ax.set_xlim(xm - (xm - xlim[0]) * factor, xm + (xlim[1] - xm) * factor)
+            ax.set_ylim(ym - (ym - ylim[0]) * factor, ym + (ylim[1] - ym) * factor)
+            ax.set_zlim(zm - (zm - zlim[0]) * factor, zm + (zlim[1] - zm) * factor)
+            self.draw_idle()
+        except Exception:
+            pass
 
 class DispatchPage(QWidget):
     def __init__(self, get_drones_func=None, parent=None):
@@ -301,6 +374,8 @@ class DispatchPage(QWidget):
             except Exception:
                 pass
 
+            self.canvas._azim = 128
+            self.canvas._fixed_elev = 26
             self.canvas.ax.view_init(elev=26, azim=128)
             self.canvas.refresh()
             self.status_label.setText("调度完成")
