@@ -151,7 +151,7 @@ class DispatchPage(QWidget):
         top_bar.addStretch()
 
         self.title_label = QLabel("救援调度")
-        self.title_label.setFont(QFont("Microsoft YaHei", 15, QFont.Bold))
+        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
         self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
         top_bar.addWidget(self.title_label)
         layout.addLayout(top_bar)

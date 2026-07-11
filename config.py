@@ -27,9 +27,9 @@ SUCCESS = "#3E8E5B"
 ERROR = "#C85A54"
 WARNING = "#C39A3A"
 SIDEBAR_BG = "#151B23"
-SIDEBAR_HOVER = "#242D38"
-SIDEBAR_ACTIVE = "#2A3644"
-TABLE_ROW_ALT = "#171D25"
+SIDEBAR_HOVER = "#28333F"
+SIDEBAR_ACTIVE = "#2C4A3A"
+TABLE_ROW_ALT = "#1F2B38"
 
 PRIORITY_MAP = {
     "紧急(P0)": 0,
@@ -53,26 +53,26 @@ DEFAULT_SERVICE_AREAS = [
     {"name": "城西服务区", "x": -340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
     {"name": "中心服务区", "x": 200.0, "y": 320.0, "z": 0.0, "scene": "城市地震场景"},
     # 山区避障场景（z值匹配地形高程+安全余量，避开山体碰撞区）
-    {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 32.0, "scene": "山区避障场景"},
-    {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 33.0, "scene": "山区避障场景"},
-    {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 18.0, "scene": "山区避障场景"},
-    {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 35.0, "scene": "山区避障场景"},
-    {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 42.0, "scene": "山区避障场景"},
+    {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 30.0, "scene": "山区避障场景"},
+    {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 31.0, "scene": "山区避障场景"},
+    {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 17.0, "scene": "山区避障场景"},
+    {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 33.0, "scene": "山区避障场景"},
+    {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 40.0, "scene": "山区避障场景"},
 ]
 
 DEFAULT_RESCUE_POINTS = [
-    # 城市地震场景（避开建筑碰撞区）
-    {"name": "居民区A-河北区", "x": -220.0, "y": 240.0, "z": 18.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-    {"name": "医院-和平区", "x": 200.0, "y": 40.0, "z": 15.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-    {"name": "学校-南开区", "x": -220.0, "y": -260.0, "z": 16.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
-    {"name": "商业街-滨江道", "x": 160.0, "y": -200.0, "z": 40.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
-    {"name": "避难所-河西区", "x": -120.0, "y": 120.0, "z": 35.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
-    # 山区避障场景（z值均高于地形高程，避开山体碰撞区）
-    {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 85.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-    {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 68.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-    {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 54.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-    {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 85.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-    {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 45.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
+    # 城市地震场景（救援点在建筑内，z=楼层×3m）
+    {"name": "居民区A-河北区", "x": -280.0, "y": 250.0, "z": 9.0, "priority": 0, "priority_text": "紧急(P0)", "note": "老城居民楼3层", "scene": "城市地震场景"},
+    {"name": "医院-和平区", "x": 170.0, "y": -100.0, "z": 12.0, "priority": 0, "priority_text": "紧急(P0)", "note": "医院4层", "scene": "城市地震场景"},
+    {"name": "学校-南开区", "x": -200.0, "y": 130.0, "z": 15.0, "priority": 1, "priority_text": "高(P1)", "note": "南开大学5层", "scene": "城市地震场景"},
+    {"name": "商业街-滨江道", "x": 80.0, "y": -50.0, "z": 30.0, "priority": 2, "priority_text": "中(P2)", "note": "滨江道商业10层", "scene": "城市地震场景"},
+    {"name": "避难所-河西区", "x": -80.0, "y": -180.0, "z": 24.0, "priority": 1, "priority_text": "高(P1)", "note": "文化中心8层", "scene": "城市地震场景"},
+    # 山区避障场景（z值=地形高程，通过contour_data双线性插值得出）
+    {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 73.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 63.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 51.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 58.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+    {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 39.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
 ]
 
 DEFAULT_MAPS = [
@@ -96,11 +96,11 @@ DEFAULT_MATERIALS = [
     {"name": "折叠帐篷", "priority": 1, "priority_text": "高(P1)", "weight": 15.0, "quantity": 5, "service_area": "城西服务区", "rescue_point": "避难所-河西区", "note": "", "scene": "城市地震场景"},
     {"name": "通讯设备", "priority": 2, "priority_text": "中(P2)", "weight": 3.0, "quantity": 8, "service_area": "中心服务区", "rescue_point": "商业街-滨江道", "note": "", "scene": "城市地震场景"},
     # 山区避障场景
-    {"name": "救援绳索", "priority": 0, "priority_text": "紧急(P0)", "weight": 5.0, "quantity": 6, "service_area": "北部营地", "rescue_point": "山腰受困点", "note": "", "scene": "山区避障场景"},
-    {"name": "医疗急救包", "priority": 0, "priority_text": "紧急(P0)", "weight": 2.5, "quantity": 8, "service_area": "南部营地", "rescue_point": "山谷被困村民", "note": "", "scene": "山区避障场景"},
-    {"name": "压缩食品", "priority": 1, "priority_text": "高(P1)", "weight": 6.0, "quantity": 12, "service_area": "东部营地", "rescue_point": "山脊求救点", "note": "", "scene": "山区避障场景"},
-    {"name": "保暖毯", "priority": 1, "priority_text": "高(P1)", "weight": 1.5, "quantity": 20, "service_area": "西部营地", "rescue_point": "山顶被困人员", "note": "", "scene": "山区避障场景"},
-    {"name": "照明设备", "priority": 2, "priority_text": "中(P2)", "weight": 3.0, "quantity": 10, "service_area": "中央补给站", "rescue_point": "河谷受困点", "note": "", "scene": "山区避障场景"},
+    {"name": "救援绳索", "priority": 0, "priority_text": "紧急(P0)", "weight": 5.0, "quantity": 6, "service_area": "北山服务区", "rescue_point": "灾区A-北坡居民点", "note": "", "scene": "山区避障场景"},
+    {"name": "医疗急救包", "priority": 0, "priority_text": "紧急(P0)", "weight": 2.5, "quantity": 8, "service_area": "南谷服务区", "rescue_point": "灾区B-河谷村庄", "note": "", "scene": "山区避障场景"},
+    {"name": "压缩食品", "priority": 1, "priority_text": "高(P1)", "weight": 6.0, "quantity": 12, "service_area": "东岭服务区", "rescue_point": "灾区C-西岭小学", "note": "", "scene": "山区避障场景"},
+    {"name": "保暖毯", "priority": 1, "priority_text": "高(P1)", "weight": 1.5, "quantity": 20, "service_area": "西峰服务区", "rescue_point": "灾区D-东坡林场", "note": "", "scene": "山区避障场景"},
+    {"name": "照明设备", "priority": 2, "priority_text": "中(P2)", "weight": 3.0, "quantity": 10, "service_area": "中心营地", "rescue_point": "灾区E-南谷农田", "note": "", "scene": "山区避障场景"},
 ]
 
 GLOBAL_STYLE = f"""
@@ -245,11 +245,15 @@ QGroupBox::title {{
     color: {ACCENT};
     font-size: 15px;
 }}
-QLabel {{ font-size: 15px; }}
+QLabel {{ font-size: 15px; background: transparent; }}
 QScrollBar:vertical {{ background: {DARK_BG}; width: 10px; border-radius: 5px; }}
 QScrollBar::handle:vertical {{ background: {BORDER}; border-radius: 5px; min-height: 40px; }}
 QScrollBar::handle:vertical:hover {{ background: {ACCENT}; }}
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+QScrollBar:horizontal {{ background: {DARK_BG}; height: 10px; border-radius: 5px; }}
+QScrollBar::handle:horizontal {{ background: {BORDER}; border-radius: 5px; min-width: 40px; }}
+QScrollBar::handle:horizontal:hover {{ background: {ACCENT}; }}
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
 QSplitter::handle {{ background-color: {BORDER}; }}
 QSplitter::handle:horizontal {{ width: 3px; }}
 QSplitter::handle:vertical {{ height: 3px; }}

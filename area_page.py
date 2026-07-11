@@ -6,7 +6,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit,
-    QDoubleSpinBox, QComboBox, QDialog, QFormLayout,
+    QDoubleSpinBox, QSpinBox, QComboBox, QDialog, QFormLayout,
     QDialogButtonBox, QMessageBox, QAbstractItemView
 )
 from PyQt5.QtCore import Qt
@@ -18,8 +18,8 @@ from config import (
     SERVICE_AREAS_FILE, DEFAULT_SERVICE_AREAS
 )
 from utils import load_json, save_json, hc
+from rescue_page import _get_terrain_height_at, _get_building_at_xy, _get_max_floor, FLOOR_HEIGHT
 
-# SCENES imported from config
 SCENE_BOUNDS = {
     "山区避障场景": (-320, 320, -300, 300, 0, 220),
     "城市地震场景": (-420, 420, -390, 390, 0, 160),
@@ -30,13 +30,16 @@ class ServiceAreaEditDialog(QDialog):
     def __init__(self, parent=None, area=None, scene="山区避障场景"):
         super().__init__(parent)
         self.setWindowTitle("编辑服务区" if area else "添加服务区")
-        self.setMinimumWidth(460)
+        self.setMinimumWidth(520)
         self.area = area
         self.scene = scene
         self.result_data = None
+        self._block_z_update = False
         self._build_ui()
         if area:
             self._load(area)
+        else:
+            self._update_z_auto()
 
     def _build_ui(self):
         layout = QVBoxLayout(self)
@@ -68,20 +71,46 @@ class ServiceAreaEditDialog(QDialog):
         self.x_spin.setDecimals(1)
         self.x_spin.setPrefix("X: ")
         self.x_spin.setMinimumHeight(40)
+        self.x_spin.valueChanged.connect(self._update_z_auto)
         cl.addWidget(self.x_spin)
         self.y_spin = QDoubleSpinBox()
         self.y_spin.setRange(y_min, y_max)
         self.y_spin.setDecimals(1)
         self.y_spin.setPrefix("Y: ")
         self.y_spin.setMinimumHeight(40)
+        self.y_spin.valueChanged.connect(self._update_z_auto)
         cl.addWidget(self.y_spin)
         self.z_spin = QDoubleSpinBox()
         self.z_spin.setRange(z_min, z_max)
         self.z_spin.setDecimals(1)
         self.z_spin.setPrefix("Z: ")
         self.z_spin.setMinimumHeight(40)
+        self.z_spin.setReadOnly(True)
+        self.z_spin.setStyleSheet("QDoubleSpinBox { background-color: #222830; color: #7C8796; }")
         cl.addWidget(self.z_spin)
         form.addRow("三维坐标：", coord_widget)
+
+        # Floor selector for city scene (hidden by default)
+        self.floor_widget = QWidget()
+        fl = QHBoxLayout(self.floor_widget)
+        fl.setSpacing(12)
+        fl.setContentsMargins(0, 0, 0, 0)
+        self.floor_spin = QSpinBox()
+        self.floor_spin.setRange(1, 1)
+        self.floor_spin.setValue(1)
+        self.floor_spin.setMinimumHeight(40)
+        self.floor_spin.setMinimumWidth(100)
+        self.floor_spin.valueChanged.connect(self._on_floor_changed)
+        fl.addWidget(self.floor_spin)
+        self.floor_info_label = QLabel("")
+        self.floor_info_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 13px; background: transparent;")
+        fl.addWidget(self.floor_info_label)
+        fl.addStretch()
+        form.addRow("所在楼层：", self.floor_widget)
+
+        self.z_hint_label = QLabel("")
+        self.z_hint_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 12px; background: transparent;")
+        form.addRow("", self.z_hint_label)
 
         layout.addLayout(form)
 
@@ -93,11 +122,88 @@ class ServiceAreaEditDialog(QDialog):
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
+        # Initial UI state
+        self._update_floor_visibility()
+
+    def _update_floor_visibility(self):
+        """Show/hide floor selector based on scene."""
+        is_city = self.scene == "城市地震场景"
+        self.floor_widget.setVisible(is_city)
+        if not is_city:
+            self.floor_info_label.setText("")
+
+    def _update_z_auto(self):
+        """Auto-calculate Z based on scene: mountain=terrain height, city=floor*3m."""
+        if self._block_z_update:
+            return
+        x = self.x_spin.value()
+        y = self.y_spin.value()
+
+        if self.scene == "山区避障场景":
+            z = _get_terrain_height_at(x, y)
+            self._block_z_update = True
+            self.z_spin.setValue(round(z, 1))
+            self._block_z_update = False
+            self.z_hint_label.setText(f"地形高程: {z:.1f}m（自动匹配山体表面）")
+            self.floor_widget.setVisible(False)
+        elif self.scene == "城市地震场景":
+            building = _get_building_at_xy(x, y)
+            if building:
+                max_floor = _get_max_floor(building)
+                self.floor_spin.setRange(1, max_floor)
+                self.floor_spin.setValue(1)
+                self.floor_info_label.setText(
+                    f"建筑高度 {building['height']:.0f}m，共 {max_floor} 层"
+                )
+                self._on_floor_changed()
+                self.z_hint_label.setText("服务区设在建筑内（选择楼层自动计算Z）")
+            else:
+                self._block_z_update = True
+                self.z_spin.setValue(0.0)
+                self._block_z_update = False
+                self.floor_spin.setRange(1, 1)
+                self.floor_spin.setValue(1)
+                self.floor_info_label.setText("空旷地面")
+                self.z_hint_label.setText("服务区在空旷地面，Z=0")
+            self._update_floor_visibility()
+        else:
+            self._update_floor_visibility()
+
+    def _on_floor_changed(self):
+        """Update Z when floor changes (city scene)."""
+        if self.scene != "城市地震场景":
+            return
+        floor = self.floor_spin.value()
+        z = round(floor * FLOOR_HEIGHT, 1)
+        self._block_z_update = True
+        self.z_spin.setValue(z)
+        self._block_z_update = False
+
     def _load(self, a):
+        self._block_z_update = True
         self.name_edit.setText(a.get("name", ""))
         self.x_spin.setValue(a.get("x", 0))
         self.y_spin.setValue(a.get("y", 0))
         self.z_spin.setValue(a.get("z", 0))
+        self._block_z_update = False
+
+        # Set floor spin for city scene
+        if self.scene == "城市地震场景":
+            z = a.get("z", 0)
+            floor = max(1, round(z / FLOOR_HEIGHT))
+            self.floor_spin.setValue(floor)
+            building = _get_building_at_xy(a.get("x", 0), a.get("y", 0))
+            if building:
+                max_floor = _get_max_floor(building)
+                self.floor_spin.setRange(1, max_floor)
+                self.floor_info_label.setText(
+                    f"建筑高度 {building['height']:.0f}m，共 {max_floor} 层"
+                )
+            else:
+                self.floor_info_label.setText("空旷地面")
+            self._update_floor_visibility()
+        else:
+            self._update_floor_visibility()
 
     def _on_ok(self):
         if not self.name_edit.text().strip():
@@ -257,5 +363,3 @@ class ServiceAreaPage(QWidget):
             if aa is a:
                 return i
         return None
-
-

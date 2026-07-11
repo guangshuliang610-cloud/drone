@@ -1,4 +1,4 @@
-"""
+﻿"""
 应急无人机调度系统 — 无人机管理页面
 文件：drone_page.py
 """
@@ -35,7 +35,7 @@ class DronePage(QWidget):
             idx = len(drones)
             drones.append({
                 "id": idx + 1,
-                "name": f"无人机-{idx + 1:02d}",
+                "name": "无人机%02d" % (idx + 1),
                 "model": "DJI M30T",
                 "max_payload": 5.0,
                 "max_range": 15.0,
@@ -76,7 +76,7 @@ class DronePage(QWidget):
         self.count_spin.setMinimumHeight(40)
         self.count_spin.setMinimumWidth(120)
         cg.addWidget(self.count_spin)
-        apply_btn = QPushButton("✅ 应用数量")
+        apply_btn = QPushButton("✔ 应用数量")
         apply_btn.setObjectName("primary")
         apply_btn.clicked.connect(self._apply_count)
         cg.addWidget(apply_btn)
@@ -106,7 +106,7 @@ class DronePage(QWidget):
         self.table = QTableWidget()
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
-            "编号", "名称", "型号", "最大载荷(kg)",
+            "编号", "名称", "型号", "最大载重(kg)",
             "航程(km)", "最大速度(km/h)", "状态"
         ])
         h = self.table.horizontalHeader()
@@ -136,7 +136,7 @@ class DronePage(QWidget):
             id_item.setFont(QFont("Consolas", 14, QFont.Bold))
             self.table.setItem(i, 0, id_item)
 
-            name_item = QTableWidgetItem(d.get("name", f"无人机-{i+1:02d}"))
+            name_item = QTableWidgetItem(d.get("name", "无人机%02d" % (i + 1)))
             name_item.setFont(QFont("Microsoft YaHei", 13))
             self.table.setItem(i, 1, name_item)
 
@@ -145,7 +145,7 @@ class DronePage(QWidget):
             self.table.setItem(i, 2, model_item)
 
             for j, key in enumerate(["max_payload", "max_range", "max_speed"]):
-                val_item = QTableWidgetItem(f"{d.get(key, 0):.1f}")
+                val_item = QTableWidgetItem("%.1f" % d.get(key, 0))
                 val_item.setTextAlignment(Qt.AlignCenter)
                 val_item.setFont(QFont("Consolas", 14))
                 self.table.setItem(i, j + 3, val_item)
@@ -158,7 +158,7 @@ class DronePage(QWidget):
             st_item.setForeground(hc(sc.get(status, TEXT_SUB)))
             self.table.setItem(i, 6, st_item)
 
-        self.count_label.setText(f"共 {len(drones)} 架无人机")
+        self.count_label.setText("共 %d 架无人机" % len(drones))
 
     def _apply_count(self):
         self.drones_data["count"] = self.count_spin.value()
@@ -188,7 +188,7 @@ class DronePage(QWidget):
                     except ValueError:
                         pass
         save_json(DRONES_FILE, self.drones_data)
-        QMessageBox.information(self, "保存成功", "无人机配置已保存 ✓")
+        QMessageBox.information(self, "保存成功", "无人机配置已保存 ✔")
 
     def _reset(self):
         if QMessageBox.question(self, "确认", "恢复默认配置？",

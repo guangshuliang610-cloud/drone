@@ -1,7 +1,7 @@
-﻿"""
-????????? ? ??????
-???task_page.py
-???????????????? ? ????? ? ???? ? ?? ? ??/???
+"""
+应急无人机调度系统 — 任务管理页面
+文件：task_page.py
+说明：创建/编辑/查看调度任务，支持多算法路径对比与3D路线可视化
 """
 
 import os
@@ -122,7 +122,7 @@ class TaskEditDialog(QDialog):
         layout.addLayout(form)
 
         btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.button(QDialogButtonBox.Ok).setText("確 認")
+        btns.button(QDialogButtonBox.Ok).setText("确 认")
         btns.button(QDialogButtonBox.Cancel).setText("取 消")
         btns.button(QDialogButtonBox.Ok).setObjectName("primary")
         btns.accepted.connect(self._on_accept)

@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit,
-    QDoubleSpinBox, QComboBox, QDialog, QFormLayout,
+    QDoubleSpinBox, QSpinBox, QComboBox, QDialog, QFormLayout,
     QDialogButtonBox, QMessageBox, QAbstractItemView
 )
 from PyQt5.QtCore import Qt
@@ -22,12 +22,14 @@ from utils import load_json, save_json, hc
 
 # Terrain height cache (lazy-loaded)
 _terrain_cache = None
+# City building obstacles cache (lazy-loaded)
+_city_obstacles_cache = None
 
-# SCENES imported from config
 SCENE_BOUNDS = {
     "山区避障场景": (-320, 320, -300, 300, 0, 220),
     "城市地震场景": (-420, 420, -390, 390, 0, 160),
 }
+FLOOR_HEIGHT = 3.0  # 每层3米
 
 
 def _load_terrain_cache():
@@ -101,6 +103,52 @@ def _get_terrain_height_at(x, y):
     return float(z)
 
 
+def _load_city_obstacles():
+    """Load city building obstacles for collision detection."""
+    global _city_obstacles_cache
+    if _city_obstacles_cache is not None:
+        return _city_obstacles_cache
+
+    try:
+        from map_city_quake import Map
+        m = Map()
+        obstacles = m.get_obstacles()
+        # Only keep building-type obstacles with footprint info
+        buildings = []
+        for obs in obstacles:
+            cx, cy, cz = obs["center"]
+            w, h, d = obs["size"]
+            buildings.append({
+                "type": obs["type"],
+                "x_min": cx - w / 2,
+                "x_max": cx + w / 2,
+                "y_min": cy - h / 2,
+                "y_max": cy + h / 2,
+                "height": d,
+            })
+        _city_obstacles_cache = buildings
+    except Exception:
+        _city_obstacles_cache = []
+
+    return _city_obstacles_cache
+
+
+def _get_building_at_xy(x, y):
+    """Check if (x, y) is inside a city building. Returns building dict or None."""
+    buildings = _load_city_obstacles()
+    for b in buildings:
+        if b["x_min"] <= x <= b["x_max"] and b["y_min"] <= y <= b["y_max"]:
+            return b
+    return None
+
+
+def _get_max_floor(building):
+    """Get max floor number for a building."""
+    if building is None:
+        return 1
+    return max(1, int(building["height"] // FLOOR_HEIGHT))
+
+
 class RescuePointEditDialog(QDialog):
     def __init__(self, parent=None, point=None, scene="山区避障场景"):
         super().__init__(parent)
@@ -109,6 +157,7 @@ class RescuePointEditDialog(QDialog):
         self.point = point
         self.scene = scene
         self.result_data = None
+        self._block_z_update = False  # prevent recursive updates
         self._build_ui()
         if point:
             self._load(point)
@@ -167,9 +216,35 @@ class RescuePointEditDialog(QDialog):
         cl.addWidget(self.z_spin)
         form.addRow("三维坐标：", coord_widget)
 
-        hint = QLabel("  Z坐标根据X/Y自动匹配地形高度")
-        hint.setStyleSheet(f"color: {TEXT_SUB}; font-size: 12px;")
-        form.addRow("", hint)
+        # Floor selector row (city scene only)
+        self.floor_widget = QWidget()
+        fl = QHBoxLayout(self.floor_widget)
+        fl.setContentsMargins(0, 0, 0, 0)
+        fl.setSpacing(12)
+        fl.addWidget(QLabel("所在楼层："))
+        self.floor_spin = QSpinBox()
+        self.floor_spin.setRange(1, 50)
+        self.floor_spin.setValue(1)
+        self.floor_spin.setMinimumHeight(40)
+        self.floor_spin.setMinimumWidth(100)
+        self.floor_spin.setSuffix(" 楼")
+        self.floor_spin.valueChanged.connect(self._on_floor_changed)
+        fl.addWidget(self.floor_spin)
+        self.floor_info_label = QLabel("")
+        self.floor_info_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 12px;")
+        fl.addWidget(self.floor_info_label)
+        fl.addStretch()
+        self.floor_widget.setVisible(self.scene == "城市地震场景")
+        form.addRow("", self.floor_widget)
+
+        # Hint label
+        if self.scene == "山区避障场景":
+            hint_text = "  Z坐标根据X/Y自动匹配地形高程（等高线）"
+        else:
+            hint_text = "  在建筑物内可选楼层（每层3米），空旷处为地面高度"
+        self.hint_label = QLabel(hint_text)
+        self.hint_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 12px;")
+        form.addRow("", self.hint_label)
 
         pri_combo_widget = QWidget()
         pl = QHBoxLayout(pri_combo_widget)
@@ -194,24 +269,69 @@ class RescuePointEditDialog(QDialog):
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
+    def _on_floor_changed(self):
+        """When floor changes, recalculate Z."""
+        if self.scene != "城市地震场景":
+            return
+        floor = self.floor_spin.value()
+        z = floor * FLOOR_HEIGHT
+        self._block_z_update = True
+        self.z_spin.setValue(z)
+        self._block_z_update = False
+
     def _update_z_from_terrain(self):
+        if self._block_z_update:
+            return
         x = self.x_spin.value()
         y = self.y_spin.value()
+
         if self.scene == "山区避障场景":
             z = _get_terrain_height_at(x, y)
+            self.z_spin.setValue(z)
         else:
-            z = 0.0
-        self.z_spin.setValue(z)
+            # City scene: check if inside a building
+            building = _get_building_at_xy(x, y)
+            if building:
+                self.floor_widget.setVisible(True)
+                max_floor = _get_max_floor(building)
+                self.floor_spin.setMaximum(max_floor)
+                btype = building.get("type", "")
+                type_name = {"tower": "天塔", "highrise": "高层", "midrise": "中层", "building": "低层"}.get(btype, "建筑")
+                self.floor_info_label.setText(f"在{type_name}内（{max_floor}层/{building['height']:.0f}m）")
+                # Use current floor to set Z
+                floor = self.floor_spin.value()
+                if floor > max_floor:
+                    self.floor_spin.setValue(max_floor)
+                    floor = max_floor
+                z = floor * FLOOR_HEIGHT
+                self._block_z_update = True
+                self.z_spin.setValue(z)
+                self._block_z_update = False
+            else:
+                self.floor_widget.setVisible(False)
+                self.floor_info_label.setText("")
+                self._block_z_update = True
+                self.z_spin.setValue(0.0)
+                self._block_z_update = False
 
     def _load(self, p):
+        self._block_z_update = True
         self.name_edit.setText(p.get("name", ""))
         self.x_spin.setValue(p.get("x", 0))
         self.y_spin.setValue(p.get("y", 0))
         self.z_spin.setValue(p.get("z", 0))
+        # Restore floor from z value for city scene
+        if self.scene == "城市地震场景":
+            z = p.get("z", 0)
+            floor = max(1, round(z / FLOOR_HEIGHT))
+            self.floor_spin.setValue(floor)
+        self._block_z_update = False
         idx = self.pri_combo.findText(p.get("priority_text", "高(P1)"))
         if idx >= 0:
             self.pri_combo.setCurrentIndex(idx)
         self.note_edit.setText(p.get("note", ""))
+        # Trigger building check after loading
+        self._update_z_from_terrain()
 
     def _on_ok(self):
         if not self.name_edit.text().strip():
@@ -391,5 +511,3 @@ class RescuePointPage(QWidget):
             if ap is p:
                 return i
         return None
-
-

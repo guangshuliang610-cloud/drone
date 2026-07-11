@@ -10,14 +10,14 @@ class Map(BaseMap):
         obstacles = []
 
         # ── 天津广播电视塔（天塔）—— 城市地标 ──
-        obstacles.append({"center": [0, 0, 65], "size": [35, 35, 130], "type": "tower"})
+        obstacles.append({"center": [0, 0, 65], "size": [45, 45, 130], "type": "tower"})
 
         # ── CBD现代高层商务区（东北方向，友谊路/滨海金融区）──
         cbd_highrises = [
-            ( 160,  170, 80, 68, 82),   # 津塔
-            ( 240,  140, 60, 72, 74),   # 金融中心A
-            ( 190,  250, 70, 55, 68),   # 金融中心B
-            ( 290,  200, 52, 64, 60),   # 商务大厦
+            ( 160,  170, 104, 88, 82),   # 津塔
+            ( 240,  140, 78, 94, 74),   # 金融中心A
+            ( 190,  250, 91, 72, 68),   # 金融中心B
+            ( 290,  200, 68, 83, 60),   # 商务大厦
         ]
         for x, y, w, h, z in cbd_highrises:
             obstacles.append({"center": [x, y, z / 2], "size": [w, h, z], "type": "highrise"})
@@ -25,19 +25,19 @@ class Map(BaseMap):
         # ── 中层公共/商业建筑（沿主干道分布，散布全城）──
         midrises = [
             # 沿海河两岸
-            (-130,   40, 65, 58, 45),   # 天津站
-            (  80,  -50, 58, 72, 40),   # 滨江道商业
-            (-200,  130, 68, 52, 48),   # 南开大学
-            (  50,  190, 52, 62, 38),   # 体育馆
+            (-130,   40, 85, 75, 45),   # 天津站
+            (  80,  -50, 75, 94, 40),   # 滨江道商业
+            (-200,  130, 88, 68, 48),   # 南开大学
+            (  50,  190, 68, 81, 38),   # 体育馆
             # 城市南部
-            (-80,  -180, 62, 55, 42),   # 文化中心
-            ( 170, -100, 55, 65, 36),   # 医院
+            (-80, -180, 81, 72, 42),   # 文化中心
+            ( 170, -100, 71, 85, 36),   # 医院
             # 城市西部
-            (-260,  -30, 58, 50, 44),   # 科技园
-            ( -60, -290, 52, 58, 35),   # 会展中心
+            (-260,  -30, 75, 65, 44),   # 科技园
+            ( -60, -290, 68, 75, 35),   # 会展中心
             # 城市北部
-            (  90,  290, 62, 55, 40),   # 奥体中心
-            (-170, -260, 55, 48, 38),   # 图书馆
+            (  90,  290, 81, 72, 40),   # 奥体中心
+            (-170, -260, 71, 62, 38),   # 图书馆
         ]
         for x, y, w, h, z in midrises:
             obstacles.append({"center": [x, y, z / 2], "size": [w, h, z], "type": "midrise"})
@@ -45,24 +45,24 @@ class Map(BaseMap):
         # ── 传统低层居民区（网格状分布，模拟天津老城街区）──
         buildings = [
             # 西北片区（红桥/河北老城）
-            (-280,  250, 52, 45, 15),
-            (-330,  200, 45, 55, 18),
-            (-250,  310, 55, 45, 14),
-            (-360,  280, 45, 50, 16),
+            (-280,  250, 68, 59, 15),
+            (-330,  200, 59, 72, 18),
+            (-250,  310, 71, 59, 14),
+            (-360,  280, 59, 65, 16),
             # 东北片区（河东/东丽）
-            ( 280,  290, 48, 50, 17),
-            ( 340,  250, 55, 45, 20),
-            ( 310,  330, 45, 48, 13),
+            ( 280,  290, 62, 65, 17),
+            ( 340,  250, 71, 59, 20),
+            ( 310,  330, 59, 62, 13),
             # 西南片区（南开/西青老城）
-            (-310, -210, 50, 48, 16),
-            (-350, -290, 45, 55, 19),
-            (-270, -330, 55, 45, 14),
-            (-360, -170, 48, 50, 15),
+            (-310, -210, 65, 62, 16),
+            (-350, -290, 59, 72, 19),
+            (-270, -330, 71, 59, 14),
+            (-360, -170, 62, 65, 15),
             # 东南片区（河西/津南）
-            ( 270, -230, 50, 45, 18),
-            ( 320, -290, 45, 50, 15),
-            ( 350, -190, 55, 48, 20),
-            ( 290, -340, 48, 45, 13),
+            ( 270, -230, 65, 59, 18),
+            ( 320, -290, 59, 65, 15),
+            ( 350, -190, 71, 62, 20),
+            ( 290, -340, 62, 59, 13),
         ]
         for x, y, w, h, z in buildings:
             obstacles.append({"center": [x, y, z / 2], "size": [w, h, z], "type": "building"})
@@ -80,11 +80,11 @@ class Map(BaseMap):
 
     def get_rescue_points(self):
         return [
-            {"name": "居民区A-河北区", "x": -220.0, "y": 240.0, "z": 18.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "医院-和平区", "x": 200.0, "y": 40.0, "z": 15.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "学校-南开区", "x": -220.0, "y": -260.0, "z": 16.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
-            {"name": "商业街-滨江道", "x": 160.0, "y": -200.0, "z": 40.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
-            {"name": "避难所-河西区", "x": -120.0, "y": 120.0, "z": 35.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "居民区A-河北区", "x": -280.0, "y": 250.0, "z": 9.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "医院-和平区", "x": 170.0, "y": -100.0, "z": 12.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "学校-南开区", "x": -200.0, "y": 130.0, "z": 15.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "商业街-滨江道", "x": 80.0, "y": -50.0, "z": 30.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
+            {"name": "避难所-河西区", "x": -80.0, "y": -180.0, "z": 24.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
         ]
 
     def get_bounds(self):
@@ -99,16 +99,16 @@ class Map(BaseMap):
         z = [0, z_top]
         for xi in x:
             yz_y, yz_z = np.meshgrid(y, z)
-            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha * 0.72, linewidth=0)
+            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha * 0.90, linewidth=0)
         for yi in y:
             xz_x, xz_z = np.meshgrid(x, z)
-            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha * 0.72, linewidth=0)
+            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha * 0.90, linewidth=0)
 
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
         pw, ph = w * 1.8, h * 1.8
         pz = 8
-        self._draw_box(ax, cx, cy, pw, ph, pz, color="#C8A850", alpha=1.0)
+        self._draw_box(ax, cx, cy, pw, ph, pz, color="#D4B860", alpha=1.0)
 
         # 塔身（窄高柱体）
         tower_w, tower_h = w * 0.5, h * 0.5
@@ -117,15 +117,15 @@ class Map(BaseMap):
         # 顶部观景台
         obs_w, obs_h = w * 1.2, h * 1.2
         obs_z = 120
-        self._draw_box(ax, cx, cy, obs_w, obs_h, obs_z, color="#9A7A38", alpha=0.98)
+        self._draw_box(ax, cx, cy, obs_w, obs_h, obs_z, color="#B08A40", alpha=1.0)
 
         # 天线
         ax.plot([cx, cx], [cy, cy], [obs_z, z_top], color="#FFD700", linewidth=2.5, alpha=1.0)
 
     def _draw_grid_roads(self, ax, x_range, y_range):
         """绘制网格状城市道路（模拟天津棋盘式路网）"""
-        road_color_main = "#B0BCC4"
-        road_color_sec = "#90A0A8"
+        road_color_main = "#C0CDD8"
+        road_color_sec = "#A0B0B8"
         road_z = 1
 
         # 主干道
@@ -156,17 +156,17 @@ class Map(BaseMap):
         gy = np.linspace(y_range[0], y_range[1], 24)
         GX, GY = np.meshgrid(gx, gy)
         GZ = np.zeros_like(GX)
-        ax.plot_surface(GX, GY, GZ, alpha=0.15, color="#1A2830", linewidth=0)
+        ax.plot_surface(GX, GY, GZ, alpha=0.85, color="#1A2830", linewidth=0)
 
         # 绘制网格道路
         self._draw_grid_roads(ax, x_range, y_range)
 
         # 渲染建筑（贴合现实的颜色，黑底可辨认）
         color_map = {
-            "tower":    ("#E8C850", 1.0),   # 金色天塔（地标，醒目）
-            "highrise": ("#60B0D8", 0.95),   # 钢蓝灰（玻璃幕墙）
-            "midrise":  ("#C0A888", 0.95),   # 暖灰（混凝土/砖混）
-            "building": ("#D8C8B0", 0.95),   # 浅暖灰（老城砖墙）
+            "tower":    ("#F0D060", 1.0),   # 金色天塔（地标，醒目）
+            "highrise": ("#50C0E8", 1.0),   # 钢蓝灰（玻璃幕墙）
+            "midrise":  ("#D4B890", 1.0),   # 暖灰（混凝土/砖混）
+            "building": ("#E0D0B8", 1.0),   # 浅暖灰（老城砖墙）
         }
 
         for obs in self.get_obstacles():

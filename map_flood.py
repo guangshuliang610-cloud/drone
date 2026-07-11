@@ -25,20 +25,20 @@ class Map(BaseMap):
 
     def get_service_areas(self):
         return [
-            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 32.0, "scene": "山区避障场景"},
-            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 33.0, "scene": "山区避障场景"},
-            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 18.0, "scene": "山区避障场景"},
-            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 35.0, "scene": "山区避障场景"},
-            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 42.0, "scene": "山区避障场景"},
+            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 30.0, "scene": "山区避障场景"},
+            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 31.0, "scene": "山区避障场景"},
+            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 17.0, "scene": "山区避障场景"},
+            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 33.0, "scene": "山区避障场景"},
+            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 40.0, "scene": "山区避障场景"},
         ]
 
     def get_rescue_points(self):
         return [
-            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 85.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 68.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 54.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 85.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 45.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 73.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 63.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 51.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 58.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 39.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
         ]
 
     def get_bounds(self):
@@ -153,17 +153,11 @@ class Map(BaseMap):
         if levels.size > 1:
             contour_colors = topo_cmap(np.linspace(0.05, 0.98, len(levels)))
             ax.contour3D(GX, GY, terrain, levels=levels, colors=contour_colors, linewidths=1.3, alpha=1.0)
-            ax.contour(
-                GX,
-                GY,
-                terrain,
-                levels=levels,
-                zdir="z",
-                offset=0,
-                colors=contour_colors,
-                linewidths=0.82,
-                alpha=0.20,
-            )
+            # Ground plane (opaque, no shadow projection)
+            gx_flat = np.linspace(x_range[0], x_range[1], 8)
+            gy_flat = np.linspace(y_range[0], y_range[1], 8)
+            GX0, GY0 = np.meshgrid(gx_flat, gy_flat)
+            ax.plot_surface(GX0, GY0, np.zeros_like(GX0), color="#1A2830", alpha=0.85, linewidth=0)
 
         ax.set_xlim(*x_range)
         ax.set_ylim(*y_range)
