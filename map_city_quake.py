@@ -102,7 +102,7 @@ class Map(BaseMap):
             [(x0,y0,0),(x0,y1,0),(x0,y1,z_top),(x0,y0,z_top)],
             [(x1,y0,0),(x1,y1,0),(x1,y1,z_top),(x1,y0,z_top)],
         ]
-        poly = Poly3DCollection(verts, facecolor=color, edgecolor='#2A3A4A', linewidth=0.3, alpha=alpha)
+        poly = Poly3DCollection(verts, facecolor=color, edgecolor='none', linewidth=0, alpha=alpha)
         ax.add_collection3d(poly)
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
@@ -163,10 +163,10 @@ class Map(BaseMap):
 
         # 渲染建筑（贴合现实的颜色，黑底可辨认）
         color_map = {
-            "tower":    ("#F0D060", 0.7),   # 金色天塔（地标，醒目）
-            "highrise": ("#50C0E8", 0.65),  # 钢蓝灰（玻璃幕墙）
-            "midrise":  ("#D4B890", 0.65),  # 暖灰（混凝土/砖混）
-            "building": ("#E0D0B8", 0.65),  # 浅暖灰（老城砖墙）
+            "tower":    ("#F0D060", 1.0),   # 金色天塔（地标，醒目）
+            "highrise": ("#50C0E8", 1.0),  # 钢蓝灰（玻璃幕墙）
+            "midrise":  ("#D4B890", 1.0),  # 暖灰（混凝土/砖混）
+            "building": ("#E0D0B8", 1.0),  # 浅暖灰（老城砖墙）
         }
         for obs in self.get_obstacles():
             cx, cy, _ = obs["center"]
