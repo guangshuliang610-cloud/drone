@@ -93,17 +93,18 @@ class Map(BaseMap):
         return ((-420, 420), (-390, 390), (0, 160))
 
     def _draw_box(self, ax, cx, cy, w, h, z_top, color, alpha):
-        x0, x1 = cx - w / 2, cx + w / 2
-        y0, y1 = cy - h / 2, cy + h / 2
-        verts = [
-            [(x0,y0,z_top),(x1,y0,z_top),(x1,y1,z_top),(x0,y1,z_top)],
-            [(x0,y0,0),(x1,y0,0),(x1,y0,z_top),(x0,y0,z_top)],
-            [(x0,y1,0),(x1,y1,0),(x1,y1,z_top),(x0,y1,z_top)],
-            [(x0,y0,0),(x0,y1,0),(x0,y1,z_top),(x0,y0,z_top)],
-            [(x1,y0,0),(x1,y1,0),(x1,y1,z_top),(x1,y0,z_top)],
-        ]
-        poly = Poly3DCollection(verts, facecolor=color, edgecolor='none', linewidth=0, alpha=alpha)
-        ax.add_collection3d(poly)
+        x = [cx - w / 2, cx + w / 2]
+        y = [cy - h / 2, cy + h / 2]
+        xx, yy = np.meshgrid(x, y)
+        ax.plot_surface(xx, yy, np.full_like(xx, z_top), color=color, alpha=alpha, linewidth=0)
+        z = [0, z_top]
+        for xi in x:
+            yz_y, yz_z = np.meshgrid(y, z)
+            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha, linewidth=0)
+        for yi in y:
+            xz_x, xz_z = np.meshgrid(x, z)
+            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha, linewidth=0)
+
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
         pw, ph = w * 1.8, h * 1.8
@@ -163,10 +164,10 @@ class Map(BaseMap):
 
         # 渲染建筑（贴合现实的颜色，黑底可辨认）
         color_map = {
-            "tower":    ("#FFD866", 1.0),   # 金色天塔
-            "highrise": ("#60D0F0", 1.0),   # 玻璃幕墙
-            "midrise":  ("#E8C8A0", 1.0),   # 混凝土砖混
-            "building": ("#F0E0C8", 1.0),   # 老城砖墙
+            "tower":    ("#E8C850", 1.0),   # 金色天塔
+            "highrise": ("#60B0D8", 1.0),   # 钢蓝灰
+            "midrise":  ("#C0A888", 1.0),   # 暖灰
+            "building": ("#D8C8B0", 1.0),   # 浅暖灰
         }
         for obs in self.get_obstacles():
             cx, cy, _ = obs["center"]
