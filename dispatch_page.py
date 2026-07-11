@@ -74,6 +74,11 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self._drag_y = 0
         self._pan_xlim = None
         self._pan_ylim = None
+        # Disable matplotlib default 3D mouse rotation to prevent wobble
+        try:
+            self.ax.disable_mouse_rotation()
+        except Exception:
+            pass
         self._bind_mouse()
 
     def _bind_mouse(self):
@@ -105,6 +110,10 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        try:
+            self.ax.disable_mouse_rotation()
+        except Exception:
+            pass
         self._bind_mouse()
 
     def refresh(self):
