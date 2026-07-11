@@ -96,15 +96,16 @@ class Map(BaseMap):
         x = [cx - w / 2, cx + w / 2]
         y = [cy - h / 2, cy + h / 2]
         xx, yy = np.meshgrid(x, y)
-        ax.plot_surface(xx, yy, np.full_like(xx, z_top), color=color, alpha=alpha, linewidth=0)
+        # 顶面透明
+        ax.plot_surface(xx, yy, np.full_like(xx, z_top), color=color, alpha=0.12, linewidth=0, shade=False)
+        # 侧面不透明
         z = [0, z_top]
         for xi in x:
             yz_y, yz_z = np.meshgrid(y, z)
-            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha, linewidth=0)
+            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha, linewidth=0, shade=False)
         for yi in y:
             xz_x, xz_z = np.meshgrid(x, z)
-            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha, linewidth=0)
-
+            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha, linewidth=0, shade=False)
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
         pw, ph = w * 1.8, h * 1.8
