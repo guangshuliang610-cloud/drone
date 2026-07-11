@@ -65,7 +65,6 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self.setMinimumSize(600, 400)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
-        self.ax.computed_zorder = False
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         self._fixed_elev = 26
@@ -109,7 +108,6 @@ class MapCanvas3D(FigureCanvasQTAgg):
     def clear_plot(self):
         self.fig.clear()
         self.ax = self.fig.add_subplot(111, projection="3d", facecolor=INPUT_BG)
-        self.ax.computed_zorder = False
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
         try:

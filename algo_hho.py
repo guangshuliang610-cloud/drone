@@ -1,4 +1,4 @@
-"""
+﻿"""
 应急无人机调度系统 — 改进HHO算法（哈里斯鹰优化）
 文件：algo_hho.py
 
@@ -260,7 +260,7 @@ class Algorithm(BaseAlgorithm):
             name = t.get("drone_name", "?")
 
             # 轨迹线
-            ax.plot(xs, ys, zs, color=color, linewidth=2, alpha=0.8, label=name)
+            ax.plot(xs, ys, zs, color=color, linewidth=2, alpha=0.8, label=name, zorder=10)
             # 起点
             ax.scatter([xs[0]], [ys[0]], [zs[0]], color=color, s=60, marker="o", edgecolors="white", linewidths=1)
             # 终点
