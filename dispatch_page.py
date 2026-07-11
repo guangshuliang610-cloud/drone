@@ -370,6 +370,14 @@ class DispatchPage(QWidget):
 
             try:
                 self.current_algo.render_result(self.canvas.ax, result)
+                # Reorder: move Line3D objects to end so they draw on top
+                from mpl_toolkits.mplot3d.art3d import Line3D, Line3DCollection
+                ax_children = self.canvas.ax._children
+                line_children = [c for c in ax_children if isinstance(c, (Line3D, Line3DCollection))]
+                other_children = [c for c in ax_children if not isinstance(c, (Line3D, Line3DCollection))]
+                ax_children.clear()
+                ax_children.extend(other_children)
+                ax_children.extend(line_children)
             except Exception as e:
                 self._log(f"轨迹渲染失败: {e}")
 
