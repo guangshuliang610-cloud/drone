@@ -99,10 +99,10 @@ class Map(BaseMap):
         z = [0, z_top]
         for xi in x:
             yz_y, yz_z = np.meshgrid(y, z)
-            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha * 0.90, linewidth=0)
+            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha, linewidth=0)
         for yi in y:
             xz_x, xz_z = np.meshgrid(x, z)
-            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha * 0.90, linewidth=0)
+            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha, linewidth=0)
 
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
