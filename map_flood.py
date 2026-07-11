@@ -148,8 +148,8 @@ class Map(BaseMap):
         # Terrain surface — very light, just a subtle base
         traces.append(go.Surface(
             x=GX, y=GY, z=GZ,
-            colorscale=[[0, '#E8F5E9'], [0.5, '#C8E6C9'], [1, '#A5D6A7']],
-            opacity=0.35, showscale=False, name="地形",
+            colorscale=[[0, '#2E7D32'], [0.3, '#43A047'], [0.5, '#66BB6A'], [0.7, '#81C784'], [1, '#A5D6A7']],
+            opacity=0.75, showscale=False, name="地形",
             contours=dict(
                 z=dict(
                     show=True, usecolormap=False,
@@ -164,8 +164,8 @@ class Map(BaseMap):
         # Green contour lines — topo_green colormap
         levels = np.linspace(8, float(np.max(GZ)) - 1, 40)
         topo_colors = [
-            '#1B5E20', '#2E7D32', '#43A047', '#66BB6A',
-            '#A5D6A7', '#C8E6C9', '#E8F5E9'
+            '#0D3B1A', '#1B5E20', '#2E7D32', '#388E3C',
+            '#43A047', '#4CAF50', '#66BB6A'
         ]
         try:
             import matplotlib.pyplot as plt
@@ -188,7 +188,7 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), level) + 0.3,
                             mode="lines",
-                            line=dict(color=line_color, width=2),
+                            line=dict(color=line_color, width=2.5),
                             showlegend=False, hoverinfo="skip"
                         ))
                         # Projected to ground
@@ -196,8 +196,8 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), 0.5),
                             mode="lines",
-                            line=dict(color=line_color, width=1.2),
-                            showlegend=False, hoverinfo="skip", opacity=0.4
+                            line=dict(color=line_color, width=1.8),
+                            showlegend=False, hoverinfo="skip", opacity=0.55
                         ))
             plt.close("all")
         except Exception:
