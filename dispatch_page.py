@@ -91,6 +91,27 @@ class MapCanvas3D(FigureCanvasQTAgg):
         self._style_axes()
         self.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
 
+    def wheelEvent(self, event):
+        """Mouse scroll to zoom in/out the 3D view."""
+        delta = event.angleDelta().y()
+        if delta == 0:
+            return
+        factor = 0.9 if delta > 0 else 1.1  # scroll up=zoom in
+        ax = self.ax
+        try:
+            xlim = ax.get_xlim()
+            ylim = ax.get_ylim()
+            zlim = ax.get_zlim()
+            xmid = (xlim[0] + xlim[1]) / 2
+            ymid = (ylim[0] + ylim[1]) / 2
+            zmid = (zlim[0] + zlim[1]) / 2
+            ax.set_xlim(xmid - (xmid - xlim[0]) * factor, xmid + (xlim[1] - xmid) * factor)
+            ax.set_ylim(ymid - (ymid - ylim[0]) * factor, ymid + (ylim[1] - ymid) * factor)
+            ax.set_zlim(zmid - (zmid - zlim[0]) * factor, zmid + (zlim[1] - zmid) * factor)
+            self.draw_idle()
+        except Exception:
+            pass
+
     def refresh(self):
         self.draw_idle()
 
