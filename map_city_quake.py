@@ -1,4 +1,6 @@
 ﻿import numpy as np
+
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from dispatch_page import BaseMap
 
 
@@ -91,19 +93,17 @@ class Map(BaseMap):
         return ((-420, 420), (-390, 390), (0, 160))
 
     def _draw_box(self, ax, cx, cy, w, h, z_top, color, alpha):
-        x = [cx - w / 2, cx + w / 2]
-        y = [cy - h / 2, cy + h / 2]
-        xx, yy = np.meshgrid(x, y)
-        ax.plot_surface(xx, yy, np.full_like(xx, z_top), color=color, alpha=alpha, linewidth=0)
-
-        z = [0, z_top]
-        for xi in x:
-            yz_y, yz_z = np.meshgrid(y, z)
-            ax.plot_surface(np.full_like(yz_y, xi), yz_y, yz_z, color=color, alpha=alpha, linewidth=0)
-        for yi in y:
-            xz_x, xz_z = np.meshgrid(x, z)
-            ax.plot_surface(xz_x, np.full_like(xz_x, yi), xz_z, color=color, alpha=alpha, linewidth=0)
-
+        x0, x1 = cx - w / 2, cx + w / 2
+        y0, y1 = cy - h / 2, cy + h / 2
+        verts = [
+            [(x0,y0,z_top),(x1,y0,z_top),(x1,y1,z_top),(x0,y1,z_top)],
+            [(x0,y0,0),(x1,y0,0),(x1,y0,z_top),(x0,y0,z_top)],
+            [(x0,y1,0),(x1,y1,0),(x1,y1,z_top),(x0,y1,z_top)],
+            [(x0,y0,0),(x0,y1,0),(x0,y1,z_top),(x0,y0,z_top)],
+            [(x1,y0,0),(x1,y1,0),(x1,y1,z_top),(x1,y0,z_top)],
+        ]
+        poly = Poly3DCollection(verts, facecolor=color, edgecolor='#2A3A4A', linewidth=0.3, alpha=alpha)
+        ax.add_collection3d(poly)
     def _draw_tower(self, ax, cx, cy, w, h, z_top, color, alpha):
         # 底部平台
         pw, ph = w * 1.8, h * 1.8
