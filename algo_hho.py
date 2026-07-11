@@ -260,7 +260,8 @@ class Algorithm(BaseAlgorithm):
             name = t.get("drone_name", "?")
 
             # 轨迹线
-            ax.plot(xs, ys, zs, color=color, linewidth=2, alpha=0.8, label=name, zorder=10)
+            ax.scatter(xs, ys, zs, c=color, s=10, alpha=0.9, label=name, zorder=10, depthshade=False)
+            ax.plot(xs, ys, zs, color=color, linewidth=1.5, alpha=0.6, zorder=10)
             # 起点
             ax.scatter([xs[0]], [ys[0]], [zs[0]], color=color, s=60, marker="o", edgecolors="white", linewidths=1)
             # 终点
