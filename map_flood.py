@@ -157,7 +157,7 @@ class Map(BaseMap):
             gx_flat = np.linspace(x_range[0], x_range[1], 8)
             gy_flat = np.linspace(y_range[0], y_range[1], 8)
             GX0, GY0 = np.meshgrid(gx_flat, gy_flat)
-            ax.plot_surface(GX0, GY0, np.zeros_like(GX0), color="#1A2830", alpha=0.35, linewidth=0)
+            ax.plot_surface(GX0, GY0, np.zeros_like(GX0), color="#1A2830", alpha=0.15, linewidth=0)
 
         ax.set_xlim(*x_range)
         ax.set_ylim(*y_range)

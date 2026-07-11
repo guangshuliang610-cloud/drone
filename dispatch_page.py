@@ -129,7 +129,7 @@ class MapCanvas3D(FigureCanvasQTAgg):
         dy = event.y - self._drag_y
         if self._drag_btn == 1:
             # Left drag: rotate around Z axis only (azimuth)
-            self._azim -= dx * 0.4
+            self._azim -= dx * 0.15
             self.ax.view_init(elev=self._fixed_elev, azim=self._azim)
             self._drag_x = event.x
             self._drag_y = event.y

@@ -156,7 +156,7 @@ class Map(BaseMap):
         gy = np.linspace(y_range[0], y_range[1], 24)
         GX, GY = np.meshgrid(gx, gy)
         GZ = np.zeros_like(GX)
-        ax.plot_surface(GX, GY, GZ, alpha=0.35, color="#1A2830", linewidth=0)
+        ax.plot_surface(GX, GY, GZ, alpha=0.15, color="#1A2830", linewidth=0)
 
         # 绘制网格道路
         self._draw_grid_roads(ax, x_range, y_range)
