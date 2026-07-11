@@ -164,8 +164,8 @@ class Map(BaseMap):
         # Green contour lines — topo_green colormap
         levels = np.linspace(8, float(np.max(GZ)) - 1, 40)
         topo_colors = [
-            '#0A2E14', '#0D3B1A', '#14521F', '#1B5E20',
-            '#1B5E20', '#226B28', '#2E7D32'
+            '#1B5E20', '#2E7D32', '#43A047', '#66BB6A',
+            '#A5D6A7', '#C8E6C9', '#E8F5E9'
         ]
         try:
             import matplotlib.pyplot as plt
@@ -188,7 +188,7 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), level) + 0.3,
                             mode="lines",
-                            line=dict(color=line_color, width=2.5),
+                            line=dict(color=line_color, width=4),
                             showlegend=False, hoverinfo="skip"
                         ))
                         # Projected to ground
@@ -196,7 +196,7 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), 0.5),
                             mode="lines",
-                            line=dict(color=line_color, width=1.8),
+                            line=dict(color=line_color, width=2.5),
                             showlegend=False, hoverinfo="skip", opacity=0.55
                         ))
             plt.close("all")
