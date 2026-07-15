@@ -212,7 +212,7 @@ class Algorithm(BaseAlgorithm):
                     pos_new = pos + self.LR * f_total / f_norm
 
                     # 边界裁剪
-                    pos_new = self._clip_to_bounds(pos_new, bounds)
+                    pos_new = self._clip_to_bounds(pos_new, bounds, has_terrain, map_obj)
 
                     interp_points[k] = pos_new
 
@@ -233,7 +233,48 @@ class Algorithm(BaseAlgorithm):
             else:
                 full_smoothed.append(list(seg_end))
 
+        # 后处理：确保整条平滑路径无碰撞
+        full_smoothed = self._verify_and_fix_path(
+            full_smoothed, obstacles, bounds, has_terrain, map_obj
+        )
+
         return full_smoothed
+
+    def _verify_and_fix_path(self, path, obstacles, bounds, has_terrain, map_obj):
+        """验证路径每段无碰撞，若有碰撞则插入抬升点"""
+        if len(path) < 2:
+            return path
+        safe_path = [path[0]]
+        for i in range(1, len(path)):
+            p_prev = np.array(safe_path[-1], dtype=float)
+            p_cur = np.array(path[i], dtype=float)
+            if self._check_collision(p_prev, p_cur, obstacles, has_terrain, map_obj):
+                # 插入中点并抬升到障碍物之上
+                mid = (p_prev + p_cur) / 2
+                self._push_above_obstacles(mid, obstacles, has_terrain, map_obj)
+                safe_path.append(mid.tolist())
+            safe_path.append(path[i])
+        return safe_path
+
+    def _push_above_obstacles(self, point, obstacles, has_terrain, map_obj):
+        """将点推高到所有邻近障碍物之上"""
+        px, py, pz = point[0], point[1], point[2]
+        # 地形高度
+        if has_terrain and map_obj:
+            try:
+                tz = float(map_obj.get_terrain_height(
+                    np.array([px]), np.array([py])
+                )[0])
+                point[2] = max(point[2], tz + 15)
+            except Exception:
+                pass
+        # 检查所有障碍物，若在其水平投影内则抬升至顶部之上
+        for obs in obstacles:
+            cx, cy, cz = obs["center"]
+            w, h, d = obs["size"]
+            if (cx - w / 2 - 2 <= px <= cx + w / 2 + 2 and
+                    cy - h / 2 - 2 <= py <= cy + h / 2 + 2):
+                point[2] = max(point[2], d + 10)  # d 是障碍物总高（从地面 0 起）
 
     def _calc_repulsive_force(self, pos, obstacles, has_terrain, map_obj):
         f_rep = np.zeros(3, dtype=float)
@@ -304,9 +345,11 @@ class Algorithm(BaseAlgorithm):
         return False
 
     def _check_collision(self, p1, p2, obstacles, has_terrain, map_obj):
+        """自适应采样碰撞检测：每 3m 至少一个采样点"""
         p1 = np.asarray(p1, dtype=float)
         p2 = np.asarray(p2, dtype=float)
-        n_check = 12
+        seg_len = np.linalg.norm(p2 - p1)
+        n_check = max(12, int(seg_len / 3) + 2)
 
         for t in np.linspace(0, 1, n_check):
             point = p1 + t * (p2 - p1)
@@ -314,13 +357,24 @@ class Algorithm(BaseAlgorithm):
                 return True
         return False
 
-    def _clip_to_bounds(self, pos, bounds):
+    def _clip_to_bounds(self, pos, bounds, has_terrain=False, map_obj=None):
+        """边界裁剪：当地形存在时，z 不低于 terrain_height + 安全余量"""
         x_min, x_max = bounds[0]
         y_min, y_max = bounds[1]
         z_min, z_max = bounds[2]
         pos[0] = np.clip(pos[0], x_min + 1, x_max - 1)
         pos[1] = np.clip(pos[1], y_min + 1, y_max - 1)
-        pos[2] = np.clip(pos[2], max(z_min, 1), z_max - 1)
+        # z 下限：如果存在地形，确保不低于地形 + 安全余量
+        z_floor = z_min
+        if has_terrain and map_obj:
+            try:
+                tz = float(map_obj.get_terrain_height(
+                    np.array([pos[0]]), np.array([pos[1]])
+                )[0])
+                z_floor = max(z_floor, tz + 10)  # 10m 安全余量
+            except Exception:
+                pass
+        pos[2] = np.clip(pos[2], max(z_floor, 1), z_max - 1)
         return pos
 
     # ============================================================

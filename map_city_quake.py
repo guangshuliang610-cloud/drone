@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from dispatch_page import BaseMap
@@ -73,22 +73,22 @@ class Map(BaseMap):
 
     def get_service_areas(self):
         return [
-            {"name": "城北服务区", "x": 0.0, "y": 340.0, "z": 0.0, "scene": "城市地震场景"},
-            {"name": "城南服务区", "x": 0.0, "y": -340.0, "z": 0.0, "scene": "城市地震场景"},
-            {"name": "城东服务区", "x": 340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
-            {"name": "城西服务区", "x": -340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
-            {"name": "中心服务区", "x": 200.0, "y": 320.0, "z": 0.0, "scene": "城市地震场景"},
+            {"name": "城北服务区", "x": 60.0, "y": 380.0, "z": 5.0, "scene": "城市地震场景"},
+            {"name": "城南服务区", "x": 0.0, "y": -380.0, "z": 5.0, "scene": "城市地震场景"},
+            {"name": "城东服务区", "x": 380.0, "y": 0.0, "z": 5.0, "scene": "城市地震场景"},
+            {"name": "城西服务区", "x": -380.0, "y": 0.0, "z": 5.0, "scene": "城市地震场景"},
+            {"name": "中心服务区", "x": 300.0, "y": 280.0, "z": 5.0, "scene": "城市地震场景"},
         ]
 
 
 
     def get_rescue_points(self):
         return [
-            {"name": "居民区A-河北区", "x": -280.0, "y": 250.0, "z": 9.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "医院-和平区", "x": 170.0, "y": -100.0, "z": 12.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "学校-南开区", "x": -200.0, "y": 130.0, "z": 15.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
-            {"name": "商业街-滨江道", "x": 80.0, "y": -50.0, "z": 30.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
-            {"name": "避难所-河西区", "x": -80.0, "y": -180.0, "z": 24.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "居民区A-河北区", "x": -280.0, "y": 310.0, "z": 40.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "医院-和平区", "x": 210.0, "y": -100.0, "z": 50.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "学校-南开区", "x": -200.0, "y": 180.0, "z": 55.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "商业街-滨江道", "x": 80.0, "y": -120.0, "z": 40.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
+            {"name": "避难所-河西区", "x": -80.0, "y": -240.0, "z": 45.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
         ]
 
 

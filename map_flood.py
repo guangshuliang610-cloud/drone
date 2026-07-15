@@ -25,22 +25,22 @@ class Map(BaseMap):
 
     def get_service_areas(self):
         return [
-            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 32.0, "scene": "山区避障场景"},
-            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 33.0, "scene": "山区避障场景"},
-            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 18.0, "scene": "山区避障场景"},
-            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 35.0, "scene": "山区避障场景"},
-            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 42.0, "scene": "山区避障场景"},
+            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 40.0, "scene": "山区避障场景"},
+            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 41.0, "scene": "山区避障场景"},
+            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 27.0, "scene": "山区避障场景"},
+            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 43.0, "scene": "山区避障场景"},
+            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 50.0, "scene": "山区避障场景"},
         ]
 
 
 
     def get_rescue_points(self):
         return [
-            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 85.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 68.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 54.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 88.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 78.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 66.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
             {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 85.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 45.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 54.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
         ]
 
 

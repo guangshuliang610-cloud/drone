@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 新RRT*算法（渐近最优三维路径规划）
 文件：algo_rrt_star.py
 
@@ -308,7 +308,10 @@ class Algorithm(BaseAlgorithm):
         p1 = np.asarray(p1, dtype=float)
         p2 = np.asarray(p2, dtype=float)
 
-        for t in np.linspace(0, 1, self.N_CHECK):
+        seg_len = np.linalg.norm(p2 - p1)
+        n_check = max(self.N_CHECK, int(seg_len / 5))
+
+        for t in np.linspace(0, 1, n_check):
             point = p1 + t * (p2 - p1)
             if self._point_in_collision(point[0], point[1], point[2], obstacles, has_terrain, map_obj):
                 return True
@@ -363,14 +366,62 @@ class Algorithm(BaseAlgorithm):
         """
         RRT* 未收敛时的 fallback：飞越模式
         计算安全巡航高度，生成 [start, 安全高点, goal]
+        二分抬升巡航高度直到 3 点路径所有线段无碰撞或触及 z_max
         """
+        obstacles = map_obj.get_obstacles() if map_obj else []
+        bounds = map_obj.get_bounds() if map_obj else ((-500, 500), (-500, 500), (0, 200))
+        z_max = bounds[2][1] - 2
+
         safe_z = self._calc_cruise_z(start, goal, map_obj, has_terrain)
-        mid_safe = [
-            (start[0] + goal[0]) / 2,
-            (start[1] + goal[1]) / 2,
-            safe_z,
-        ]
-        return [list(start), mid_safe, list(goal)]
+        start_arr = np.array(start, dtype=float)
+        goal_arr = np.array(goal, dtype=float)
+        mid_xy = [(start[0] + goal[0]) / 2, (start[1] + goal[1]) / 2]
+
+        def _is_safe(z):
+            """检查 [start, midpoint(z), goal] 两段是否都无碰撞"""
+            mid_arr = np.array(mid_xy + [z], dtype=float)
+            return (
+                not self._check_collision(start_arr, mid_arr, obstacles, has_terrain, map_obj)
+                and not self._check_collision(mid_arr, goal_arr, obstacles, has_terrain, map_obj)
+            )
+
+        # 初始高度已安全则直接返回
+        if _is_safe(safe_z):
+            return [list(start), mid_xy + [safe_z], list(goal)]
+
+        # 二分向上搜索最低安全巡航高度
+        lo, hi = safe_z, z_max
+        found_z = None
+        for _ in range(25):
+            mid_z = (lo + hi) / 2
+            if _is_safe(mid_z):
+                found_z = mid_z
+                hi = mid_z
+            else:
+                lo = mid_z
+            if hi - lo < 0.5:
+                break
+
+        if found_z is not None:
+            return [list(start), mid_xy + [found_z], list(goal)]
+
+        # 最终兜底：生成带多个中间爬升点的路径
+        return self._build_climb_path(start, goal, z_max, obstacles, has_terrain, map_obj)
+
+    def _build_climb_path(self, start, goal, safe_z, obstacles, has_terrain, map_obj):
+        """构建带爬升-巡航-下降的多段安全路径"""
+        n_mid = 5
+        path = [list(start)]
+        for i in range(1, n_mid + 1):
+            t = i / (n_mid + 1)
+            x = start[0] + t * (goal[0] - start[0])
+            y = start[1] + t * (goal[1] - start[1])
+            # 先爬升后下降：用 sin 曲线过渡
+            z_factor = np.sin(t * np.pi)
+            z = max(start[2], goal[2]) + z_factor * (safe_z - max(start[2], goal[2]))
+            path.append([x, y, z])
+        path.append(list(goal))
+        return path
 
     def _calc_cruise_z(self, start, goal, map_obj, has_terrain):
         """
@@ -416,27 +467,91 @@ class Algorithm(BaseAlgorithm):
 
         return safe_z
 
+    def _ensure_safe_path(self, path, obstacles, has_terrain, map_obj):
+        """
+        逐段迭代检查路径是否无碰。
+        若某段碰撞，插入中间航点并抬升至最近障碍物/地形之上，
+        重复直到整条路径无碰或达到最大迭代次数。
+        """
+        if len(path) < 2:
+            return path
+
+        result = [list(p) for p in path]
+
+        for _ in range(10):
+            new_path = [result[0]]
+            had_collision = False
+            for i in range(len(result) - 1):
+                p1 = np.array(result[i], dtype=float)
+                p2 = np.array(result[i + 1], dtype=float)
+                if self._check_collision(p1, p2, obstacles, has_terrain, map_obj):
+                    had_collision = True
+                    mid = (p1 + p2) / 2
+                    mid[2] = self._lift_z_for_point(
+                        mid[0], mid[1], mid[2],
+                        obstacles, has_terrain, map_obj,
+                    )
+                    new_path.append(mid.tolist())
+                new_path.append(list(result[i + 1]))
+            result = new_path
+            if not had_collision:
+                break
+
+        return result
+
+    def _lift_z_for_point(self, x, y, z, obstacles, has_terrain, map_obj):
+        """
+        计算点 (x, y, z) 处的最低安全高度：
+        取原高度、附近障碍物顶部、地形高度三者的最大值 + 余量。
+        """
+        safe_z = z
+
+        # 地形
+        if has_terrain:
+            try:
+                tz = float(map_obj.get_terrain_height(
+                    np.array([x]), np.array([y])
+                )[0])
+                safe_z = max(safe_z, tz + self.MARGIN + 5)
+            except Exception:
+                pass
+
+        # 障碍物
+        for obs in obstacles:
+            cx, cy, _ = obs["center"]
+            w, h, d = obs["size"]
+            if abs(x - cx) < w / 2 + 10 and abs(y - cy) < h / 2 + 10:
+                safe_z = max(safe_z, d + self.MARGIN + 5)
+
+        return safe_z
+
     # ============================================================
     #  路径平滑
     # ============================================================
 
     def _smooth_path(self, path, obstacles, has_terrain, map_obj):
         """
-        路径平滑（shortcut + 样条插值）
-        尝试跳过冗余中间节点，同时确保平滑后的路径无碰
+        路径平滑（shortcut + 碰撞验证）
+        尝试跳过冗余中间节点，确保平滑后的路径无碰
+        仅当相邻节点间距不过大时才尝试 shortcut，避免跨越障碍
         """
         if len(path) <= 2:
             return path
 
-        # Shortcut：尝试跳过中间节点
+        # Shortcut：尝试跳过中间节点，但限制距离不超过 3*STEP_SIZE
         smoothed = [path[0]]
         i = 0
         while i < len(path) - 1:
-            # 尝试连接到最远可达节点
             best_j = i + 1
-            for j in range(min(i + 4, len(path) - 1), i, -1):
+            max_j = min(i + 3, len(path) - 1)
+            for j in range(max_j, i, -1):
+                p_i = np.array(path[i])
+                p_j = np.array(path[j])
+                seg_dist = np.linalg.norm(p_j - p_i)
+                if seg_dist > self.STEP_SIZE * 3:
+                    continue  # 太远了不做 shortcut，避免跨越障碍
                 if not self._check_collision(
-                    np.array(path[i]), np.array(path[j]),
+                    p_i, p_j,
                     obstacles, has_terrain, map_obj
                 ):
                     best_j = j
@@ -444,7 +559,25 @@ class Algorithm(BaseAlgorithm):
             smoothed.append(path[best_j])
             i = best_j
 
-        return smoothed if len(smoothed) >= 2 else path
+        # 最终验证：确保平滑后每段都安全，若有碰撞则插入抬升点
+        safe_path = [smoothed[0]]
+        for k in range(1, len(smoothed)):
+            p_prev = np.array(safe_path[-1])
+            p_cur = np.array(smoothed[k])
+            if self._check_collision(p_prev, p_cur, obstacles, has_terrain, map_obj):
+                # 插入中点并抬升
+                mid = (p_prev + p_cur) / 2
+                if has_terrain and map_obj:
+                    try:
+                        tz = float(map_obj.get_terrain_height(np.array([mid[0]]), np.array([mid[1]]))[0])
+                        mid[2] = max(mid[2], tz + 20)
+                    except Exception:
+                        mid[2] = max(mid[2], (p_prev[2] + p_cur[2]) / 2 + 20)
+                safe_path.append(mid.tolist())
+            safe_path.append(smoothed[k])
+
+        return safe_path if len(safe_path) >= 2 else path
+
 
     # ============================================================
     #  结果构建
