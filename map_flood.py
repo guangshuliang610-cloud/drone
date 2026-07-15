@@ -148,13 +148,13 @@ class Map(BaseMap):
         # Terrain surface — very light, just a subtle base
         traces.append(go.Surface(
             x=GX, y=GY, z=GZ,
-            colorscale=[[0, '#4CAF50'], [0.25, '#66BB6A'], [0.5, '#81C784'], [0.75, '#A5D6A7'], [1, '#C8E6C9']],
-            opacity=0.65, showscale=False, name="地形",
+            colorscale=[[0, '#1B5E20'], [0.2, '#2E7D32'], [0.4, '#43A047'], [0.6, '#66BB6A'], [0.8, '#A5D6A7'], [1, '#E8F5E9']],
+            opacity=0.45, showscale=False, name="地形",
             contours=dict(
                 z=dict(
                     show=True, usecolormap=False,
                     highlightcolor="#ffffff", project_z=False,
-                    start=10, end=float(np.max(GZ)) - 2, size=6
+                    start=20, end=float(np.max(GZ)) - 4, size=12
                 )
             ),
             lightposition=dict(x=200, y=-200, z=800),
@@ -188,7 +188,7 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), level) + 0.3,
                             mode="lines",
-                            line=dict(color=line_color, width=4),
+                            line=dict(color=line_color, width=3.5),
                             showlegend=False, hoverinfo="skip"
                         ))
                         # Projected to ground
@@ -196,7 +196,7 @@ class Map(BaseMap):
                             x=seg[:, 0], y=seg[:, 1],
                             z=np.full(len(seg), 0.5),
                             mode="lines",
-                            line=dict(color=line_color, width=2.5),
+                            line=dict(color=line_color, width=1.8),
                             showlegend=False, hoverinfo="skip", opacity=0.55
                         ))
             plt.close("all")
