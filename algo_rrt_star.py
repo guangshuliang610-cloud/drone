@@ -87,10 +87,19 @@ class Algorithm(BaseAlgorithm):
                 rp_materials[mat_idx % n_rp].append(m["name"])
                 mat_idx += 1
 
+        # ?? ????-????????? ??
+        tasks = BatteryManager.build_delivery_tasks(
+            materials, service_areas, rescue_points
+        )
+        drone_assignments = BatteryManager.assign_drones_to_tasks(
+            drones, tasks, service_areas, rescue_points
+        )
+
         used_rps = set()
         for d_idx in range(n_drones):
-            sa_idx = d_idx % len(sa_coords)
-            rp_idx = d_idx % n_rp
+            _asgn = drone_assignments[d_idx]
+            sa_idx = _asgn["sa_idx"]
+            rp_idx = _asgn["rp_idx"]
             used_rps.add(rp_idx)
 
             start = sa_coords[sa_idx]

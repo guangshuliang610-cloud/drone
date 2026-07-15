@@ -94,10 +94,19 @@ class Algorithm(BaseAlgorithm):
         success_count = 0
         pareto_front_sizes = []
 
+        # ?? ????-????????? ??
+        tasks = BatteryManager.build_delivery_tasks(
+            materials, service_areas, rescue_points
+        )
+        drone_assignments = BatteryManager.assign_drones_to_tasks(
+            drones, tasks, service_areas, rescue_points
+        )
+
         used_rps = set()
         for d_idx in range(n_drones):
-            sa_idx = d_idx % len(sa_coords)
-            rp_idx = d_idx % n_rp
+            _asgn = drone_assignments[d_idx]
+            sa_idx = _asgn["sa_idx"]
+            rp_idx = _asgn["rp_idx"]
             used_rps.add(rp_idx)
 
             start = sa_coords[sa_idx]
@@ -117,7 +126,7 @@ class Algorithm(BaseAlgorithm):
             for path in candidates:
                 f1 = self._calc_time(path, drone)
                 f2 = self._calc_risk(path, obstacles, map_obj, has_terrain)
-                f3 = self._calc_energy(path, drone, rp_materials.get(rp_idx, []), materials)
+                f3 = self._calc_energy(path, drone, _asgn["material_names"], materials)
                 candidate_objs.append((f1, f2, f3))
 
             # ── 步骤3：非支配排序 ──

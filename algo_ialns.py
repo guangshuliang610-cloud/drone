@@ -64,8 +64,20 @@ class Algorithm(BaseAlgorithm):
         bounds = map_obj.get_bounds() if map_obj else ((-500, 500), (-500, 500), (0, 200))
 
         # ── 构建代价矩阵 ──
+        # ?? ?? SA??? RP ???????? SA ?????? SA ????
+        sa_index = {a["name"]: i for i, a in enumerate(service_areas)}
+        rp_index = {r["name"]: i for i, r in enumerate(rescue_points)}
+        sa_valid_rps = {}
+        for m in materials:
+            sa_name = m.get("service_area", "")
+            rp_name = m.get("rescue_point", "")
+            sa_i = sa_index.get(sa_name)
+            rp_i = rp_index.get(rp_name)
+            if sa_i is not None and rp_i is not None:
+                sa_valid_rps.setdefault(sa_i, set()).add(rp_i)
+
         cost_matrix = self._build_cost_matrix(
-            sa_coords, rp_coords, rp_priorities, drones, has_terrain, map_obj
+            sa_coords, rp_coords, rp_priorities, drones, has_terrain, map_obj, sa_valid_rps=sa_valid_rps
         )
 
         # ── 第一阶段：IALNS 求解最优分配 ──
@@ -112,11 +124,13 @@ class Algorithm(BaseAlgorithm):
         for d_idx in range(n_drones):
             sa_idx = assignment[d_idx]["sa"]
             rp_idx = assignment[d_idx]["rp"]
+            # rp=-1 ??? SA ?????????
+            if rp_idx == -1:
+                continue
             used_rps.add(rp_idx)
 
             start = sa_coords[sa_idx]
             goal = rp_coords[rp_idx]
-
             # ── 使用 RRT* 规划路径 ──
             path = None
             is_fallback = False
@@ -200,15 +214,18 @@ class Algorithm(BaseAlgorithm):
     # ============================================================
 
     def _build_cost_matrix(self, sa_coords, rp_coords, rp_priorities,
-                           drones, has_terrain, map_obj):
+                           drones, has_terrain, map_obj,
+                           sa_valid_rps=None):
         """
-        构建代价矩阵 cost[i][j] = distance(sa_i -> rp_j) / drone_speed + penalty(priority)
+        ?????? cost[i][j] = distance(sa_i -> rp_j) / drone_speed + penalty(priority)
+        sa_valid_rps: dict[sa_idx, set(rp_idx)] ? ?? SA ??? RP ???
+                      ? (sa,rp) ?????????? inf??????
         """
         n_sa = len(sa_coords)
         n_rp = len(rp_coords)
         cost_matrix = np.zeros((n_sa, n_rp))
 
-        # 使用平均无人机速度作为归一化因子
+        # ????????????????
         avg_speed = 16.67  # m/s (60 km/h)
         if drones:
             speeds = [d.get("max_speed", 60) / 3.6 for d in drones if d.get("max_speed", 60) > 0]
@@ -217,6 +234,11 @@ class Algorithm(BaseAlgorithm):
 
         for i in range(n_sa):
             for j in range(n_rp):
+                # SA i ???? RP j ????????????????
+                if sa_valid_rps is not None and j not in sa_valid_rps.get(i, set()):
+                    cost_matrix[i][j] = float('inf')
+                    continue
+
                 dx = sa_coords[i][0] - rp_coords[j][0]
                 dy = sa_coords[i][1] - rp_coords[j][1]
                 dz = sa_coords[i][2] - rp_coords[j][2]
@@ -286,22 +308,24 @@ class Algorithm(BaseAlgorithm):
 
     def _initial_solution(self, cost_matrix, n_drones, n_rp, n_sa):
         """
-        初始解：pair assignment
-        每架无人机分配一个救援点（贪心最小代价），允许重复分配
+        ????pair assignment
+        ???????????????????????????
+        ?? SA ??? RP ???? inf?? SA ?????rp ?? -1????
         """
         assignment = []
         for d_idx in range(n_drones):
             sa_idx = d_idx % n_sa
-            best_rp = 0
+            best_rp = -1
             best_cost = float("inf")
             for rp_idx in range(n_rp):
                 c = cost_matrix[sa_idx][rp_idx]
                 if c < best_cost:
                     best_cost = c
                     best_rp = rp_idx
+            if best_cost == float("inf"):
+                best_rp = -1  # ? SA ?????????
             assignment.append({"sa": sa_idx, "rp": best_rp})
         return assignment
-
     def _solution_cost(self, solution, cost_matrix):
         """计算解的总代价"""
         total = 0.0
