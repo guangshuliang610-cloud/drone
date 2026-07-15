@@ -1,6 +1,7 @@
 ﻿# 应急无人机调度系统 — 开发笔记
 
 > 最后更新：2026-07-15  
+> 分支：main，最新提交：`TBD-battery`  
 > 分支：main，最新提交：`b1264a1`
 
 ---
@@ -44,6 +45,7 @@
 ├── rescue_points.json   # 救援点数据
 ├── service_areas.json   # 服务区数据
 ├── algorithms.json      # 算法注册列表
+├── algo_battery.py      # 🆕 统一电量管理：换电站插入+物理模型+渲染
 └── contour_data.json    # 山区等高线地形数据（压缩）
 ```
 
@@ -169,36 +171,32 @@ GOAL_BIAS = 0.15
 
 ---
 
-### 🔴 问题 2：无人机电量管理未接入主算法
+### 🟢 问题 2（已解决）：无人机电量统一管理
 
-**现象**：无人机管理页修改 `battery` 参数，调度不触发换电。
+> 2026-07-15 电量管理已重构为 `algo_battery.py`，所有 6 个算法统一接入。
 
-**根因**：
-- `algo_rrt_star.py`（主用算法）**不评估电量**
-- `algo_power.py`（电量算法）需要手动从下拉框选择
-- 两算法共用默认参数，`algo_power.py` **硬编码常量**：
+**设计**：
+- **物理模型**：电量容量由 `max_range` × 38 Wh/km 推导；或由 `battery_capacity_kWh` 字段显式指定。
+- **换电时间**：根据无人机型号查表（DJI M30T = 2 分钟；DJI Mini = 1 分钟；Heavy/VTOL = 5 分钟），型号匹配忽略大小写与连字符差异。
+- **阈值**：当下一段航程会导致剩余电量 < 25%，在最近服务区插入换电站航点，然后满电出发。
+- **渲染**：换电站在 3D 视图中显示为绿色方块 ⚡，所有算法自动调用同一渲染逻辑。
+
+**算法接入方式**（每个 `solve()` 末尾一行调用）：
 
 ```python
-E_CONSUME = 0.08   # 每米耗电 — 应从 drone 对象读取
-MAX_E = 100.0      # 满电量 — 应从 drone["battery"] 读取
-SWAP_TIME = 1.8    # 换电时间 — 应从 drone["model"] 推断
+from algo_battery import BatteryManager
+return BatteryManager().apply(drones, service_areas, result)
 ```
 
-**数据结构**（`drones.json`）：
-```json
-{
-  "id": 1, "name": "无人机-01", "model": "DJI M30T",
-  "max_payload": 5.0, "max_range": 15.0,
-  "max_speed": 60.0, "battery": 100, "status": "待命"
-}
-```
-
-**城区现状**：地图最大跨度 ~400 单位，满电航程 = 100/0.08 = 1250 单位，一次飞行不触发换电。
-
-**可行方案**：
-1. 将电量检查嵌入 `algo_rrt_star.py`（不增加算法入口）
-2. 让 `algo_power.py` 读取 drone 对象参数（替代硬编码常量）
-3. 定义：RRT* 收敛 + 电量充足 = 成功；电量不足 = 插入换电站
+**已接入的算法**：
+| 算法 | 接入前是否处理电量 |
+|------|--------------------|
+| `algo_rrt_star.py` | ❌ 新增 |
+| `algo_apf.py` | ❌ 新增 |
+| `algo_power.py` | ✅ 硬编码（已切换至统一管理） |
+| `algo_ialns.py` | ❌ 新增 |
+| `algo_nsga2.py` | ❌ 新增 |
+| `algo_risk3d.py` | ❌ 新增 |
 
 ---
 
@@ -250,9 +248,62 @@ git checkout backup/pre-ui-redesign
 
 ## 九、未决定项
 
-| 问题 | 选项 A | 选项 B | 选项 C |
-|------|--------|--------|--------|
-| RRT* 未收敛 | 提高迭代数到 2000 | 保留飞越模式 | 增加提示 |
-| 电量约束 | 嵌入 RRT* | 修正 algo_power 读取 drone 参数 | 独立算法 |
-| 距离单位 | 地图加比例尺 | 文档定义换算 | 维持现状 |
+| 问题 | 选项 A | 选项 B | 选项 C | 状态 |
+|------|--------|--------|--------|------|
+| RRT* 未收敛 | 提高迭代数到 2000 | 保留飞越模式 | 增加提示 | ⏳ 讨论中 |
+| ~~电量约束~~ | ~~嵌入 RRT*~~ | ~~修正 algo_power~~ | ~~独立算法~~ | ✅ 已选"统一模块"方案（algo_battery.py） |
+| 距离单位 | 地图加比例尺 | 文档定义换算 | 维持现状 | ⏳ 讨论中 |
+---
+
+## 十、电量管理模块（algo_battery.py）
+
+> 2026-07-15 新增
+
+### 模块职责
+所有 6 个算法在 `solve()` 末尾调用，自动完成：电量累计 → 安全阈值检查 → 最近服务区换电站插入 → 时间惩罚。
+
+### 物理参数推导链
+
+```
+capacity_kWh  = drone["battery_capacity_kWh"] 或 (max_range_km × 38 Wh/km)
+max_range_m    = max_range_km × 1000
+e_consume_per_m = capacity_kWh / max_range_m   (kWh/m)
+initial_energy  = capacity_kWh × (battery_pct / 100.0)
+```
+
+**阈值规则**：
+- 剩余电量飞完下一段后 < 25% → 触发换电
+- 剩余电量甚至不够飞到最近服务区 → 90% 当前电量硬飞到服务区（兜底）
+
+**换电时间（秒）**：
+
+| 型号 | 时间 |
+|------|------|
+| DJI M30T | 120 (2 min) |
+| DJI M350/M300 | 150 (2.5 min) |
+| DJI Mini | 60 (1 min) |
+| EVO Heavy | 300 (5 min) |
+| EVTOL | 420 (7 min) |
+| 其他机型 | 按 capacity_kWh 分段推断（默认 120s） |
+
+**输出数据**：
+
+```python
+traj["swap_stations"]      # [{"pos":[x,y,z], "name":"服务区名"}, ...]
+traj["swap_count"]         # int，该机的换电次数
+traj["battery_remaining_pct"]  # 飞到终点的剩余电量百分比
+traj["power_low"]          # bool，是否触发过换电
+traj["total_swap_time"]    # 本机换电总耗时（秒）
+traj["total_time"]         # 重新计算 = 飞行时间 + 换电时间
+traj["total_distance"]     # 包含服务区绕行的实际距离
+
+result["total_swaps"]      # 所有无人机合计换电次数
+result["total_swap_time"]  # 所有无人机合计换电时间（秒）
+```
+
+### 渲染集成
+- 所有算法的 `render_plotly()` 和 `render_result()` 已统一注入换电站 ⚡ 标记绘制。
+- 换电站使用 Plotly 的 Scatter3d mode=markers+text，symbol="square"，00E676 绿色方块 + ⚡ 符号。
+
+---
 

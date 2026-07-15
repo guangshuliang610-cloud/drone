@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急响应无人机调度系统 — 3D 风险评估器
 文件：algo_risk3d.py
 
@@ -15,6 +15,7 @@
 
 import math
 import numpy as np
+from algo_battery import BatteryManager
 from dispatch_page import BaseAlgorithm
 
 
@@ -34,6 +35,9 @@ class Algorithm(BaseAlgorithm):
         """
         先调用 RRT* 获取路径，再计算风险评分，若 avg_risk > threshold 则微调高风险路段。
         """
+
+        from algo_battery import BatteryManager
+
         # ── 延迟导入 RRT* ──
         from algo_rrt_star import Algorithm as RRTStar
 
@@ -107,7 +111,7 @@ class Algorithm(BaseAlgorithm):
             "avg_risk": round(avg_risk, 4),
             "message": f"RRT*+Risk3D规划完成，{n}架无人机平均风险{avg_risk:.2f}",
         }
-        return result
+        return BatteryManager().apply(drones, service_areas, result)
 
     # ============================================================
     #  风险计算
@@ -360,6 +364,10 @@ class Algorithm(BaseAlgorithm):
                     edgecolors="white", linewidths=0.5,
                 )
 
+            # ── 换电站标记 ──
+            for swap in t.get("swap_stations", []):
+                BatteryManager.render_swap_mPL(ax, [swap])
+
     # ============================================================
     #  渲染（Plotly）
     # ============================================================
@@ -416,6 +424,11 @@ class Algorithm(BaseAlgorithm):
                     marker=dict(size=6, color=color, symbol="diamond", opacity=0.8),
                     showlegend=False,
                 ))
+
+            # ── 换电站标记 ──
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                traces.extend(BatteryManager.render_swap_plotly_swap_traces(swap_stations))
 
         # ── 风险热力点 ──
         risk_colors = {

@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — NSGA-II多目标选择算法
 文件：algo_nsga2.py
 
@@ -15,6 +15,7 @@ NSGA-II（Non-dominated Sorting Genetic Algorithm II）：
 import math
 import random
 import numpy as np
+from algo_battery import BatteryManager
 from dispatch_page import BaseAlgorithm
 
 
@@ -45,6 +46,7 @@ class Algorithm(BaseAlgorithm):
           5. 选 knee point 作为推荐解
           6. 返回推荐方案 + 备选方案
         """
+        from algo_battery import BatteryManager
         n_drones = len(drones)
         n_rp = len(rescue_points)
 
@@ -203,7 +205,7 @@ class Algorithm(BaseAlgorithm):
 
         success_rate = success_count / n_drones if n_drones > 0 else 0
 
-        return {
+        result = {
             "trajectories": all_trajectories,
             "total_time": round(total_time_rec, 1),
             "total_distance": round(total_distance_rec, 1),
@@ -211,6 +213,7 @@ class Algorithm(BaseAlgorithm):
             "pareto_front_count": int(round(avg_pareto)),
             "message": message,
         }
+        return BatteryManager().apply(drones, service_areas, result)
 
     # ============================================================
     #  候选路径生成
@@ -508,6 +511,11 @@ class Algorithm(BaseAlgorithm):
                     marker="^", alpha=0.5 if is_recommended else 0.2,
                 )
 
+
+            # ── 换电站标记 ──
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                BatteryManager.render_swap_mPL(ax, swap_stations)
     # ============================================================
     #  渲染（Plotly）
     # ============================================================
@@ -583,4 +591,9 @@ class Algorithm(BaseAlgorithm):
                     ),
                     showlegend=False,
                 ))
+
+            # ── 换电站标记 ──
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                traces.extend(BatteryManager.render_swap_plotly_swap_traces(swap_stations))
         return traces

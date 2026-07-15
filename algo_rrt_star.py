@@ -16,6 +16,7 @@ import math
 import random
 import numpy as np
 from dispatch_page import BaseAlgorithm
+from algo_battery import BatteryManager  # 渲染换电站
 
 
 class Algorithm(BaseAlgorithm):
@@ -39,6 +40,7 @@ class Algorithm(BaseAlgorithm):
           3. 未收敛时 fallback 到飞越模式
           4. 路径平滑
         """
+        from algo_battery import BatteryManager
         n_drones = len(drones)
         n_rp = len(rescue_points)
 
@@ -154,13 +156,15 @@ class Algorithm(BaseAlgorithm):
             msg_parts.append(f"{fallback_count}架无人机使用飞越模式(RRT*未收敛)")
         msg = "；".join(msg_parts)
 
-        return {
+        # ── 电量管理：换电站插入 ──
+        result = {
             "trajectories": trajectories,
             "total_time": total_time,
             "total_distance": total_distance,
             "success_rate": min(success_rate, 1.0),
             "message": msg,
         }
+        return BatteryManager().apply(drones, service_areas, result)
 
     # ============================================================
     #  RRT* 核心
@@ -637,6 +641,9 @@ class Algorithm(BaseAlgorithm):
                     xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=25,
                     marker="^", alpha=0.6,
                 )
+            # ── 换电站标记 ──
+            for swap in t.get("swap_stations", []):
+                BatteryManager.render_swap_mPL(ax, [swap])
 
     # ============================================================
     #  渲染（Plotly）
@@ -691,4 +698,9 @@ class Algorithm(BaseAlgorithm):
                     marker=dict(size=5, color=color, symbol="diamond", opacity=0.7),
                     showlegend=False,
                 ))
+            # ── 换电站标记 ──
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                traces.extend(BatteryManager.render_swap_plotly_swap_traces(swap_stations))
+
         return traces

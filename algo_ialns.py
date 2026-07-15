@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — IALNS 自适应大邻域搜索算法（VRP 任务分配器）
 文件：algo_ialns.py
 
@@ -19,6 +19,7 @@ IALNS（Adaptive Large Neighborhood Search）算法：
 import math
 import random
 import numpy as np
+from algo_battery import BatteryManager
 from dispatch_page import BaseAlgorithm
 
 
@@ -43,6 +44,8 @@ class Algorithm(BaseAlgorithm):
           3. Adaptive Large Neighborhood Search 优化分配
           4. 对每对 (drone, rp) 调用 RRT* 规划三维避障路径
         """
+        from algo_battery import BatteryManager
+
         n_drones = len(drones)
         n_rp = len(rescue_points)
         n_sa = len(service_areas)
@@ -183,13 +186,14 @@ class Algorithm(BaseAlgorithm):
             msg_parts.append(f"{fallback_count}架无人机使用飞越模式(RRT*未收敛)")
         msg = "；".join(msg_parts)
 
-        return {
+        result = {
             "trajectories": trajectories,
             "total_time": total_time,
             "total_distance": total_distance,
-            "success_rate": min(success_rate, 1.0),
-            "message": msg,
+            "success_rate": len(used_rps) / n_rp if n_rp > 0 else 0,
+            "message": msg_parts[0] + ("，" + "，".join(msg_parts[1:]) if len(msg_parts) > 1 else ""),
         }
+        return BatteryManager().apply(drones, service_areas, result)
 
     # ============================================================
     #  代价矩阵构建
@@ -508,6 +512,10 @@ class Algorithm(BaseAlgorithm):
                     marker="^", alpha=0.6,
                 )
 
+            # ── 换电站标记 ──
+            for swap in t.get("swap_stations", []):
+                BatteryManager.render_swap_mPL(ax, [swap])
+
     # ============================================================
     #  渲染（Plotly）
     # ============================================================
@@ -571,5 +579,10 @@ class Algorithm(BaseAlgorithm):
                 opacity=0.4,
                 hoverinfo="skip",
             ))
+
+            # ── 换电站标记 ──
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                traces.extend(BatteryManager.render_swap_plotly_swap_traces(swap_stations))
 
         return traces

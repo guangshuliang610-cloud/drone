@@ -14,6 +14,7 @@
 
 import math
 import numpy as np
+from algo_battery import BatteryManager
 from dispatch_page import BaseAlgorithm
 
 
@@ -37,6 +38,7 @@ class Algorithm(BaseAlgorithm):
         2. 对每条轨迹的相邻路径点用 APF 插值平滑
         3. 碰撞验证，不通过则回退到原路径
         """
+        from algo_battery import BatteryManager
         n_drones = len(drones)
         n_rp = len(rescue_points)
 
@@ -155,13 +157,14 @@ class Algorithm(BaseAlgorithm):
         ]
         message = "\uFF1B".join(msg_parts)
 
-        return {
+        result = {
             "trajectories": trajectories,
             "total_time": total_time,
             "total_distance": total_distance,
-            "success_rate": min(success_rate, 1.0),
+            "success_rate": len(used_rps) / n_rp if n_rp > 0 else 0,
             "message": message,
         }
+        return BatteryManager().apply(drones, service_areas, result)
 
     # ============================================================
     #  APF 核心平滑
@@ -437,6 +440,10 @@ class Algorithm(BaseAlgorithm):
                     marker=".", alpha=0.5,
                 )
 
+            # —— 换电站标记 ——
+            for swap in t.get("swap_stations", []):
+                BatteryManager.render_swap_mPL(ax, [swap])
+
     # ============================================================
     #  渲染（Plotly）
     # ============================================================
@@ -500,4 +507,9 @@ class Algorithm(BaseAlgorithm):
                     marker=dict(size=4, color=color, symbol="circle", opacity=0.6),
                     showlegend=False,
                 ))
+            # —— 换电站标记 ——
+            swap_stations = t.get("swap_stations", [])
+            if swap_stations:
+                traces.extend(BatteryManager.render_swap_plotly_swap_traces(swap_stations))
+
         return traces
