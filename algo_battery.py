@@ -92,51 +92,52 @@ CRITICAL_BATTERY_PCT = 12.0
 class BatteryManager:
     """统一电量管理器，由所有算法的 solve() 末尾调用。"""
 
-    # ──────────────────────────────────────────────────────────
-    #  Drone-task assignment by service area
-    # ──────────────────────────────────────────────────────────
+    # ──────────────────────────────────────────────────
+    #  Unified drone-task assignment by drone.service_area
+    #  All algorithms call these two @staticmethods.
+    # ──────────────────────────────────────────────────
 
     @staticmethod
     def build_delivery_tasks(materials, service_areas, rescue_points):
-        """Build delivery tasks from materials."""
+        """Group materials by (SA, RP). Returns dict[sa_idx] -> [(rp_idx, mat_name), ...]."""
         sa_index = {a["name"]: i for i, a in enumerate(service_areas)}
         rp_index = {r["name"]: i for i, r in enumerate(rescue_points)}
-        task_dict = {}
+        tasks_by_sa = {}
         for m in materials:
             sa_name = m.get("service_area", "")
             rp_name = m.get("rescue_point", "")
             sa_idx = sa_index.get(sa_name)
             rp_idx = rp_index.get(rp_name)
             if sa_idx is not None and rp_idx is not None:
-                task_dict.setdefault((sa_idx, rp_idx), []).append(m["name"])
-        return [(sa_idx, rp_idx, mats) for (sa_idx, rp_idx), mats in task_dict.items()]
+                tasks_by_sa.setdefault(sa_idx, []).append((rp_idx, [m["name"]]))
+        return tasks_by_sa
 
     @staticmethod
-    def assign_drones_to_tasks(drones, tasks, service_areas, rescue_points):
-        """Assign drones to tasks: drone at SA X delivers materials at SA X."""
-        sa_tasks = {}
-        for sa_idx, rp_idx, mats in tasks:
-            sa_tasks.setdefault(sa_idx, []).append((rp_idx, mats))
-        n_rp = len(rescue_points)
+    def assign_drones_to_tasks(drones, tasks_by_sa, service_areas, rescue_points):
+        """
+        Unified assignment: each drone delivers from its own service_area.
+        If a drone's SA has no materials, it stays idle (has_task=False).
+        """
+        sa_index = {a["name"]: i for i, a in enumerate(service_areas)}
+        remaining = {k: list(v) for k, v in tasks_by_sa.items()}
         assignments = []
-        for d_idx in range(len(drones)):
-            sa_idx = d_idx % len(service_areas)
-            if sa_idx in sa_tasks and sa_tasks[sa_idx]:
-                rp_idx, mat_names = sa_tasks[sa_idx].pop(0)
+        for d_idx, drone in enumerate(drones):
+            sa_name = drone.get("service_area", "")
+            sa_idx = sa_index.get(sa_name, -1)
+            has_task = False
+            rp_idx = 0
+            mat_names = []
+            if sa_idx >= 0 and sa_idx in remaining and remaining[sa_idx]:
+                rp_idx, mat_names = remaining[sa_idx].pop(0)
                 has_task = True
-            else:
-                rp_idx = d_idx % n_rp if n_rp > 0 else 0
-                mat_names = []
-                has_task = False
             assignments.append({
                 "drone_idx": d_idx,
                 "sa_idx": sa_idx,
                 "rp_idx": rp_idx,
-                "material_names": mat_names,
+                "material_names": mat_names if has_task else [],
                 "has_task": has_task,
             })
         return assignments
-
     def apply(self, drones, service_areas, result):
         """
         对 result 中的所有轨迹做电量约束处理。

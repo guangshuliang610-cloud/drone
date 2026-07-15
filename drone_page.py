@@ -15,7 +15,7 @@ from PyQt5.QtGui import QFont
 from config import (
     TEXT_MAIN, TEXT_SUB, ACCENT, SUCCESS, ERROR, WARNING, WHITE,
     BORDER, PANEL_BG, INPUT_BG,
-    DRONES_FILE
+    DRONES_FILE, DEFAULT_SERVICE_AREAS
 )
 from utils import load_json, save_json, hc
 
@@ -26,6 +26,7 @@ class DronePage(QWidget):
         super().__init__(parent)
         self.drones_data = load_json(DRONES_FILE, {"count": 3, "drones": []})
         self._ensure_drones()
+        self._sa_combos = []
         self._build_ui()
         self._refresh_table()
 
@@ -46,6 +47,7 @@ class DronePage(QWidget):
                 "m_body": 10.0,
                 "U_bat": 64.8,
                 "C_bat_Ah": 30.0,
+                "service_area": "",
             })
         self.drones_data["drones"] = drones[:count]
         self.drones_data["count"] = count
@@ -116,9 +118,9 @@ class DronePage(QWidget):
         layout.addLayout(btn_row)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(10)
+        self.table.setColumnCount(11)
         self.table.setHorizontalHeaderLabels([
-            "编号", "名称", "型号", "最大载重(kg)",
+            "编号", "名称", "服务区", "型号", "最大载重(kg)",
             "航程(km)", "最大速度(km/h)", "机身重(kg)",
             "电池(V)", "容量(Ah)", "状态"
         ])
@@ -153,15 +155,25 @@ class DronePage(QWidget):
             name_item.setFont(QFont("Microsoft YaHei", 13))
             self.table.setItem(i, 1, name_item)
 
+            self._sa_combos.append([])
+            sa_combo = QComboBox()
+            sa_names = [a["name"] for a in DEFAULT_SERVICE_AREAS]
+            sa_combo.addItems(["(未分配)"] + sa_names)
+            cur_sa = d.get("service_area", "")
+            if cur_sa in sa_names:
+                sa_combo.setCurrentIndex(sa_names.index(cur_sa) + 1)
+            self._sa_combos[-1] = sa_combo
+            self.table.setCellWidget(i, 2, sa_combo)
+
             model_item = QTableWidgetItem(d.get("model", "DJI M30T"))
             model_item.setTextAlignment(Qt.AlignCenter)
-            self.table.setItem(i, 2, model_item)
+            self.table.setItem(i, 3, model_item)
 
             for j, key in enumerate(["max_payload", "max_range", "max_speed", "m_body", "U_bat", "C_bat_Ah"]):
                 val_item = QTableWidgetItem("%.1f" % d.get(key, 0))
                 val_item.setTextAlignment(Qt.AlignCenter)
                 val_item.setFont(QFont("Consolas", 14))
-                self.table.setItem(i, j + 3, val_item)
+                self.table.setItem(i, j + 4, val_item)
 
             status = d.get("status", "待命")
             st_item = QTableWidgetItem(status)
@@ -169,7 +181,7 @@ class DronePage(QWidget):
             st_item.setFont(QFont("Microsoft YaHei", 13, QFont.Bold))
             sc = {"待命": SUCCESS, "执行中": ACCENT, "充电中": WARNING, "维修中": ERROR, "离线": TEXT_SUB}
             st_item.setForeground(hc(sc.get(status, TEXT_SUB)))
-            self.table.setItem(i, 6, st_item)
+            self.table.setItem(i, 10, st_item)
 
         self.count_label.setText("共 %d 架无人机" % len(drones))
 
@@ -189,17 +201,23 @@ class DronePage(QWidget):
     def _save(self):
         drones = self.drones_data.get("drones", [])
         for i in range(min(self.table.rowCount(), len(drones))):
-            for col, key in [(1, "name"), (2, "model")]:
+            for col, key in [(1, "name"), (3, "model")]:
                 item = self.table.item(i, col)
                 if item:
                     drones[i][key] = item.text()
-            for col, key in [(3, "max_payload"), (4, "max_range"), (5, "max_speed"), (6, "m_body"), (7, "U_bat"), (8, "C_bat_Ah")]:
+            for col, key in [(4, "max_payload"), (5, "max_range"), (6, "max_speed"), (7, "m_body"), (8, "U_bat"), (9, "C_bat_Ah")]:
                 item = self.table.item(i, col)
                 if item:
                     try:
                         drones[i][key] = float(item.text())
                     except ValueError:
                         pass
+        # Save service_area from combo
+        for i in range(min(self.table.rowCount(), len(drones))):
+            if i < len(self._sa_combos) and self._sa_combos[i]:
+                sa_text = self._sa_combos[i].currentText()
+                drones[i]["service_area"] = "" if sa_text.startswith("(未分配") else sa_text
+
         save_json(DRONES_FILE, self.drones_data)
         QMessageBox.information(self, "保存成功", "无人机配置已保存 ✔")
 
@@ -210,4 +228,5 @@ class DronePage(QWidget):
             self._ensure_drones()
             self.count_spin.setValue(3)
             self._refresh_table()
-            save_json(DRONES_FILE, self.drones_data)
+            save_json(DRONES_FILE, self.drones_data)
+
