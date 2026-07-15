@@ -354,15 +354,6 @@ class Algorithm(BaseAlgorithm):
                 [xs[-1]], [ys[-1]], [zs[-1]], color=color, s=130,
                 marker="*", edgecolors="white", linewidths=1.5,
             )
-            # 中间航点（按风险值着色）
-            if len(xs) > 2:
-                # 根据风险值选择大小
-                sizes = [40 + int(risk * 60)] * (len(xs) - 2)
-                ax.scatter(
-                    xs[1:-1], ys[1:-1], zs[1:-1],
-                    c=color, s=sizes, marker="^", alpha=0.7,
-                    edgecolors="white", linewidths=0.5,
-                )
 
             # ── 换电站标记 ──
             for swap in t.get("swap_stations", []):
@@ -417,13 +408,6 @@ class Algorithm(BaseAlgorithm):
                 ),
                 name=f"{name} 投送点", showlegend=False,
             ))
-            # 中间航点
-            if len(xs) > 2:
-                traces.append(go.Scatter3d(
-                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode="markers",
-                    marker=dict(size=6, color=color, symbol="diamond", opacity=0.8),
-                    showlegend=False,
-                ))
 
             # ── 换电站标记 ──
             swap_stations = t.get("swap_stations", [])

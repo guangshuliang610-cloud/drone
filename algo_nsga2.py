@@ -512,11 +512,6 @@ class Algorithm(BaseAlgorithm):
                     marker="*", alpha=0.35,
                 )
 
-            if len(xs) > 2:
-                ax.scatter(
-                    xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=25,
-                    marker="^", alpha=0.5 if is_recommended else 0.2,
-                )
 
 
             # ── 换电站标记 ──
@@ -589,15 +584,6 @@ class Algorithm(BaseAlgorithm):
                     showlegend=False,
                 ))
 
-            if len(xs) > 2:
-                traces.append(go.Scatter3d(
-                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode="markers",
-                    marker=dict(
-                        size=5, color=color, symbol="diamond",
-                        opacity=0.7 if is_recommended else 0.3,
-                    ),
-                    showlegend=False,
-                ))
 
             # ── 换电站标记 ──
             swap_stations = t.get("swap_stations", [])

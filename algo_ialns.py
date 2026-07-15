@@ -505,12 +505,6 @@ class Algorithm(BaseAlgorithm):
                 [xs[-1]], [ys[-1]], [zs[-1]], color=color, s=120,
                 marker="*", edgecolors="white", linewidths=1.5,
             )
-            # 中间航点（小三角）
-            if len(xs) > 2:
-                ax.scatter(
-                    xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=25,
-                    marker="^", alpha=0.6,
-                )
 
             # ── 换电站标记 ──
             for swap in t.get("swap_stations", []):
@@ -562,13 +556,6 @@ class Algorithm(BaseAlgorithm):
                 ),
                 name=f"{name} 投送点", showlegend=False,
             ))
-            # 中间航点（小三角）
-            if len(xs) > 2:
-                traces.append(go.Scatter3d(
-                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode="markers",
-                    marker=dict(size=5, color=color, symbol="diamond", opacity=0.7),
-                    showlegend=False,
-                ))
 
             # 分配连线：起点到终点的虚线（表示分配关系）
             traces.append(go.Scatter3d(

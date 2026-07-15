@@ -391,11 +391,6 @@ class Algorithm(BaseAlgorithm):
                 marker="*", edgecolors="white", linewidths=1.5,
             )
             # 平滑插值点
-            if len(xs) > 2:
-                ax.scatter(
-                    xs[1:-1], ys[1:-1], zs[1:-1], color=color, s=20,
-                    marker=".", alpha=0.5,
-                )
 
     # ============================================================
     #  渲染（Plotly）
@@ -444,12 +439,6 @@ class Algorithm(BaseAlgorithm):
                 name=f"{name} 投送点", showlegend=False,
             ))
             # 平滑插值点
-            if len(xs) > 2:
-                traces.append(go.Scatter3d(
-                    x=xs[1:-1], y=ys[1:-1], z=zs[1:-1], mode="markers",
-                    marker=dict(size=4, color=color, symbol="circle", opacity=0.6),
-                    showlegend=False,
-                ))
         return traces
 """
 
