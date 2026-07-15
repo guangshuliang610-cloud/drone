@@ -19,8 +19,8 @@ from dispatch_page import BaseAlgorithm
 
 
 class Algorithm(BaseAlgorithm):
-    name = "APF轨迹平滑算法"
-    desc = "人工势场法，将RRT*离散路径点拟合为光滑可飞曲线，建筑/地形双兼容"
+    name = "APF 人工势场优化"
+    desc = "人工势场法，离散路径点平滑拟合为可飞曲线，建筑/地形双兼容"
 
     # —— APF 核心参数 ——
     K_ATT = 0.5        # 引力系数

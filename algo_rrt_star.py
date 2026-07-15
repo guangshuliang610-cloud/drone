@@ -20,8 +20,8 @@ from algo_battery import BatteryManager  # 渲染换电站
 
 
 class Algorithm(BaseAlgorithm):
-    name = "新RRT*算法"
-    desc = "渐近最优三维路径规划，ChooseParent+Rewire，建筑/地形双相容"
+    name = "RRT* 渐近最优规划"
+    desc = "渐近最优三维路径规划（chooseParent+Rewire），建筑/地形双兼容"
 
     # ── RRT* 核心参数 ──
     MAX_ITER = 800

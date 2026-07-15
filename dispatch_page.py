@@ -309,7 +309,25 @@ class DispatchPage(QWidget):
 
         try:
             result = self.current_algo.solve(drones, materials, service_areas, rescue_points, self.current_map)
-            self._log(result.get("message", "\u8c03\u5ea6\u5b8c\u6210"))
+            self._log(result.get("message", "调度完成"))
+
+            # ── 调度统计摘要 ──
+            self._log("─── 调度统计 ───")
+            total_time = result.get("total_time", 0)
+            self._log(f"总用时：{total_time:.1f} 秒 ({total_time/60:.1f} 分钟)")
+            total_swap_time = result.get("total_swap_time", 0)
+            total_swaps = result.get("total_swaps", 0)
+            self._log(f"换电次数：{total_swaps} 次，总换电时间 {total_swap_time:.1f} 秒 ({total_swap_time/60:.1f} 分钟)")
+            self._log("─── 单机详情 ───")
+            for traj in result.get("trajectories", []):
+                drone_name = traj.get("drone_name", "?")
+                t_time = traj.get("total_time", 0)
+                swap_count = traj.get("swap_count", 0)
+                swap_names = [s.get("name", "?") for s in traj.get("swap_stations", [])]
+                battery_pct = traj.get("battery_remaining_pct", "?")
+                is_fallback = "飞越" if traj.get("is_fallback", False) else "规划"
+                swap_info = f"换电={swap_count}次" + (f" [{','.join(swap_names)}]" if swap_names else "")
+                self._log(f"  {drone_name}: {t_time:.1f}s | {is_fallback} | {swap_info} | 剩余电{battery_pct}%")
 
             # Add trajectory traces to map figure
             try:

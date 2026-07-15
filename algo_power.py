@@ -18,8 +18,8 @@ from dispatch_page import BaseAlgorithm
 
 
 class Algorithm(BaseAlgorithm):
-    name = "电量约束算法"
-    desc = "RRT*+电量约束，逐段累计功耗，超出航程时自动插入换电站"
+    name = "RRT* 续航约束调度"
+    desc = "RRT* + 续航约束，电量不足时自动在服务区换电，参数继承 drone 对象"
 
     # ── 颜色表（与 RRT* 一致）──
     COLORS = [

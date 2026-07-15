@@ -24,8 +24,8 @@ from dispatch_page import BaseAlgorithm
 
 
 class Algorithm(BaseAlgorithm):
-    name = "IALNS自适应大邻域搜索"
-    desc = "VRP任务分配器：自适应大邻域搜索 + RRT*路径规划，建筑/地形双相容"
+    name = "IALNS VRP 任务分配"
+    desc = "自适应大邻域搜索，VRP任务分配优化 + RRT*路径规划"
 
     # ── IALNS 核心参数 ──
     MAX_ITER = 700          # 大邻域搜索迭代次数

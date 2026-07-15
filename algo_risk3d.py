@@ -20,8 +20,8 @@ from dispatch_page import BaseAlgorithm
 
 
 class Algorithm(BaseAlgorithm):
-    name = "RRT*+Risk3D 风险评估算法"
-    desc = "对RRT*路径计算三维风险评分，高风险路段沿风险梯度反方向微调"
+    name = "Risk3D 风险评估规划"
+    desc = "三维风险评估（静态/动态/地形），高风险路段沿梯度反方向微调"
 
     # ── 风险参数 ──
     TAU_BUILDING = 30.0       # 静态建筑风险衰减系数

@@ -20,8 +20,8 @@ from dispatch_page import BaseAlgorithm
 
 
 class Algorithm(BaseAlgorithm):
-    name = "NSGA-II多目标选择算法"
-    desc = "帕累托最优路径规划，飞行时间/风险/能耗三目标权衡，推荐+备选方案"
+    name = "NSGA-II 多目标路径选择"
+    desc = "帕累托最优（时间/风险/能耗三目标），knee-point推荐最优路线"
 
     # ── 风险模型参数 ──
     RISK_TAU = 60.0       # 静态势风险衰减距离(m)
@@ -198,6 +198,13 @@ class Algorithm(BaseAlgorithm):
         if not all_trajectories:
             return self._empty_result("NSGA-II未能生成有效路径")
 
+        # ── 只保留每架无人机的推荐路线（过滤掉候选方案） ──
+        trajectories = [t for t in all_trajectories if t.get("is_recommended", False)]
+        if not trajectories:
+            # 兜底：如果没有标记 recommended 的，保留 rank=0
+            trajectories = [t for t in all_trajectories if t.get("pareto_rank", 99) == 0]
+        if not trajectories:
+            trajectories = all_trajectories  # 最终兜底
         message = (
             f"NSGA-II帕累托规划完成，推荐方案：{'；'.join(msg_parts)}。"
             f"平均帕累托前沿大小{avg_pareto:.1f}。"
@@ -206,7 +213,7 @@ class Algorithm(BaseAlgorithm):
         success_rate = success_count / n_drones if n_drones > 0 else 0
 
         result = {
-            "trajectories": all_trajectories,
+            "trajectories": trajectories,
             "total_time": round(total_time_rec, 1),
             "total_distance": round(total_distance_rec, 1),
             "success_rate": round(success_rate, 2),
