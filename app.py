@@ -7,7 +7,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QFrame, QStackedWidget, QLineEdit
+    QLabel, QPushButton, QFrame, QStackedWidget
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         root.addWidget(right_wrap, stretch=1)
 
         if self.nav_buttons:
-            self.nav_buttons[0].setChecked(True)
+            self.nav_buttons[0].setChecked(False)
             self.stack.setCurrentIndex(0)
 
     def _build_sidebar(self) -> QWidget:
@@ -235,26 +235,6 @@ class MainWindow(QMainWindow):
         lay.setContentsMargins(20, 0, 20, 0)
         lay.setSpacing(14)
 
-        # 左侧搜索框
-        search = QLineEdit()
-        search.setPlaceholderText("  \u641c\u7d22\u7269\u8d44 / \u65e0\u4eba\u673a / \u4efb\u52a1 ...")
-        search.setFixedWidth(320)
-        search.setFixedHeight(36)
-        search.setFont(QFont("Microsoft YaHei", 11))
-        search.setStyleSheet(f"""
-            QLineEdit {{
-                background-color: {INPUT_BG};
-                color: {TEXT_MAIN};
-                border: 1.5px solid {BORDER};
-                border-radius: 18px;
-                padding: 0 16px;
-            }}
-            QLineEdit:focus {{
-                border: 1.5px solid {ACCENT};
-            }}
-        """)
-        lay.addWidget(search)
-
         lay.addStretch()
 
         # 右侧状态标签
@@ -266,49 +246,6 @@ class MainWindow(QMainWindow):
             f"color: {TEXT_MAIN}; background: transparent;"
         )
         lay.addWidget(status_lbl)
-
-        # 刷新按钮
-        btn_refresh = QPushButton("\U0001f504 \u5237\u65b0")
-        btn_refresh.setFont(QFont("Segoe UI Emoji", 11))
-        btn_refresh.setFixedSize(80, 34)
-        btn_refresh.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {INPUT_BG};
-                color: {TEXT_MAIN};
-                border: 1px solid {BORDER};
-                border-radius: 8px;
-            }}
-            QPushButton:hover {{
-                background-color: {SIDEBAR_HOVER};
-                border-color: {ACCENT};
-                color: {ACCENT};
-            }}
-        """)
-        btn_refresh.clicked.connect(self._on_refresh)
-        lay.addWidget(btn_refresh)
-
-        # 新建调度按钮
-        btn_new = QPushButton("\u2795 \u65b0\u5efa\u8c03\u5ea6")
-        btn_new.setFont(QFont("Microsoft YaHei", 11, QFont.Bold))
-        btn_new.setFixedSize(130, 34)
-        btn_new.setStyleSheet(f"""
-            QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 {ACCENT}, stop:1 {ACCENT_DARK});
-                color: #FFFFFF;
-                border: none;
-                border-radius: 8px;
-            }}
-            QPushButton:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                    stop:0 #35DA7E, stop:1 {ACCENT});
-            }}
-            QPushButton:pressed {{
-                background: {ACCENT_DARK};
-            }}
-        """)
-        btn_new.clicked.connect(self._on_new_dispatch)
-        lay.addWidget(btn_new)
 
         return bar
 
@@ -347,21 +284,6 @@ class MainWindow(QMainWindow):
                     self.task_page.reload_config()
             else:
                 btn.setChecked(False)
-
-    def _on_refresh(self):
-        idx = self.stack.currentIndex()
-        if idx == 0:
-            self.material_page.reload_data()
-        elif idx == 4:
-            self.dispatch_page.reload_config()
-        elif idx == 5:
-            self.task_page.reload_config()
-
-    def _on_new_dispatch(self):
-        for i, btn in enumerate(self.nav_buttons):
-            btn.setChecked(i == 4)
-        self.stack.setCurrentIndex(4)
-        self.dispatch_page.reload_config()
 
 
 if __name__ == "__main__":

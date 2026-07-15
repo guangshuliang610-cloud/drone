@@ -371,17 +371,6 @@ class Algorithm(BaseAlgorithm):
             color = t.get("color", "#1E6FD9")
             name = t.get("drone_name", "?")
 
-            # 原始 RRT* 路径（虚线，半透明）
-            orig_wps = t.get("orig_waypoints", [])
-            if len(orig_wps) >= 2:
-                ox = [w["pos"][0] for w in orig_wps]
-                oy = [w["pos"][1] for w in orig_wps]
-                oz = [w["pos"][2] for w in orig_wps]
-                ax.plot(
-                    ox, oy, oz, color=color, linewidth=1.2, alpha=0.35,
-                    linestyle="--", label=f"{name}(原始)",
-                )
-
             # 平滑后路径（实线）
             xs = [w["pos"][0] for w in wps]
             ys = [w["pos"][1] for w in wps]
@@ -389,7 +378,7 @@ class Algorithm(BaseAlgorithm):
 
             ax.plot(
                 xs, ys, zs, color=color, linewidth=2.5, alpha=0.9,
-                linestyle="-", label=f"{name}(平滑)",
+                linestyle="-", label=f"{name}",
             )
             # 起点
             ax.scatter(
@@ -425,20 +414,6 @@ class Algorithm(BaseAlgorithm):
             color = t.get("color", "#1E6FD9")
             name = t.get("drone_name", "?")
 
-            # 原始 RRT* 路径（虚线，半透明）
-            orig_wps = t.get("orig_waypoints", [])
-            if len(orig_wps) >= 2:
-                ox = [w["pos"][0] for w in orig_wps]
-                oy = [w["pos"][1] for w in orig_wps]
-                oz = [w["pos"][2] for w in orig_wps]
-                traces.append(go.Scatter3d(
-                    x=ox, y=oy, z=oz, mode="lines",
-                    line=dict(color=color, width=2, dash="dash"),
-                    opacity=0.4,
-                    name=f"{name}(原始RRT*)",
-                    showlegend=True,
-                ))
-
             # 平滑后路径（实线）
             xs = [w["pos"][0] for w in wps]
             ys = [w["pos"][1] for w in wps]
@@ -447,7 +422,7 @@ class Algorithm(BaseAlgorithm):
             traces.append(go.Scatter3d(
                 x=xs, y=ys, z=zs, mode="lines",
                 line=dict(color=color, width=5, dash="solid"),
-                name=f"{name}(APF平滑)",
+                name=f"{name}",
                 showlegend=True,
             ))
             # 起点
