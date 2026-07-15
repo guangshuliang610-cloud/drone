@@ -85,10 +85,10 @@ class Map(BaseMap):
     def get_rescue_points(self):
         return [
             {"name": "居民区A", "x": -280.0, "y": 310.0, "z": 2, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "医院", "x": 210.0, "y": -100.0, "z": 36, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "学校", "x": -200.0, "y": 180.0, "z": 42, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "医院", "x": 210.0, "y": -100.0, "z": 2, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "学校", "x": -200.0, "y": 180.0, "z": 2, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
             {"name": "商业街", "x": 80.0, "y": -120.0, "z": 2, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
-            {"name": "避难所", "x": -80.0, "y": -240.0, "z": 35, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "避难所", "x": -100.0, "y": 200.0, "z": 2, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
         ]
 
 
