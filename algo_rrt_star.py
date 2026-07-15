@@ -658,13 +658,10 @@ class Algorithm(BaseAlgorithm):
             color = t.get("color", "#1E6FD9")
             name = t.get("drone_name", "?")
 
-            # Fallback 路径用 dash 线型区分
-            line_dash = "dash" if t.get("is_fallback", False) else "solid"
-
             # 轨迹线
             traces.append(go.Scatter3d(
                 x=xs, y=ys, z=zs, mode="lines",
-                line=dict(color=color, width=5, dash=line_dash),
+                line=dict(color=color, width=5, dash="solid"),
                 name=name, showlegend=True,
             ))
             # 起点

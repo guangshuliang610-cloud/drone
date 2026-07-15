@@ -529,13 +529,10 @@ class Algorithm(BaseAlgorithm):
             color = t.get("color", "#1E6FD9")
             name = t.get("drone_name", "?")
 
-            # Fallback 路径用 dash 线型区分
-            line_dash = "dash" if t.get("is_fallback", False) else "solid"
-
             # 轨迹线
             traces.append(go.Scatter3d(
                 x=xs, y=ys, z=zs, mode="lines",
-                line=dict(color=color, width=5, dash=line_dash),
+                line=dict(color=color, width=5, dash="solid"),
                 name=name, showlegend=True,
             ))
             # 起点
@@ -557,11 +554,11 @@ class Algorithm(BaseAlgorithm):
                 name=f"{name} 投送点", showlegend=False,
             ))
 
-            # 分配连线：起点到终点的虚线（表示分配关系）
+            # 分配连线：起点到终点的连线（表示分配关系）
             traces.append(go.Scatter3d(
                 x=[xs[0], xs[-1]], y=[ys[0], ys[-1]], z=[zs[0], zs[-1]],
                 mode="lines",
-                line=dict(color=color, width=1, dash="dot"),
+                line=dict(color=color, width=1, dash="solid"),
                 showlegend=False,
                 opacity=0.4,
                 hoverinfo="skip",

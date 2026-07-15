@@ -501,7 +501,7 @@ class Algorithm(BaseAlgorithm):
             else:
                 ax.plot(
                     xs, ys, zs, color=color, linewidth=1.5, alpha=0.35,
-                    linestyle="--", label=f"{name} {cand_label}",
+                    linestyle="-", label=f"{name} {cand_label}",
                 )
                 ax.scatter(
                     [xs[0]], [ys[0]], [zs[0]], color=color, s=30,
@@ -565,7 +565,7 @@ class Algorithm(BaseAlgorithm):
             else:
                 traces.append(go.Scatter3d(
                     x=xs, y=ys, z=zs, mode="lines",
-                    line=dict(color=color, width=3, dash="dash"),
+                    line=dict(color=color, width=3, dash="solid"),
                     name=f"{name} {cand_label}",
                     showlegend=True, opacity=0.4,
                 ))
