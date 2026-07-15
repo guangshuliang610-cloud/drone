@@ -1,5 +1,5 @@
 """
-Emergency UAV Dispatch System - Login/Register Interface
+应急无人机调度系统 — 登录/注册界面
 File: login.py
 Description: Entry point, login then jump to main console
 """
@@ -193,7 +193,7 @@ class RightPanel(QWidget):
         lay.addStretch()
 
         # Footer
-        footer = QLabel("\u00a9 2026 Emergency UAV")
+        footer = QLabel("© 2026 应急无人机调度")
         footer.setFont(QFont("Segoe UI", 8))
         footer.setStyleSheet("color: %s; background: transparent;" % BORDER)
         footer.setAlignment(Qt.AlignCenter)
@@ -204,7 +204,7 @@ class RightPanel(QWidget):
 class LoginDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Emergency UAV Dispatch System \u2014 Login")
+        self.setWindowTitle("应急无人机调度系统 — 登录")
         self.setMinimumSize(700, 480)
         self.resize(700, 480)
         self.setStyleSheet(LOGIN_STYLE)
@@ -235,7 +235,7 @@ class LoginDialog(QDialog):
         cl.setSpacing(0)
 
         # Title
-        self.title_lbl = QLabel("Emergency UAV Dispatch System")
+        self.title_lbl = QLabel("应急无人机调度系统")
         self.title_lbl.setFont(QFont("Microsoft YaHei", 22, QFont.Bold))
         self.title_lbl.setStyleSheet("color: %s; background: transparent;" % TEXT_MAIN)
         self.title_lbl.setAlignment(Qt.AlignCenter)
@@ -244,7 +244,7 @@ class LoginDialog(QDialog):
         cl.addSpacing(4)
 
         # Subtitle
-        self.sub_lbl = QLabel("Emergency UAV Dispatch System")
+        self.sub_lbl = QLabel("应急无人机调度系统")
         self.sub_lbl.setFont(QFont("Segoe UI", 12))
         self.sub_lbl.setStyleSheet("color: %s; background: transparent;" % TEXT_SUB)
         self.sub_lbl.setAlignment(Qt.AlignCenter)
@@ -255,14 +255,14 @@ class LoginDialog(QDialog):
         # Tab bar
         tab_bar = QHBoxLayout()
         tab_bar.setSpacing(0)
-        self.login_tab_btn = QPushButton("Login")
+        self.login_tab_btn = QPushButton("登录")
         self.login_tab_btn.setObjectName("tab_btn")
         self.login_tab_btn.setCheckable(True)
         self.login_tab_btn.setChecked(True)
         self.login_tab_btn.clicked.connect(lambda: self._switch_tab(0))
         tab_bar.addWidget(self.login_tab_btn)
 
-        self.reg_tab_btn = QPushButton("Register")
+        self.reg_tab_btn = QPushButton("注册")
         self.reg_tab_btn.setObjectName("tab_btn")
         self.reg_tab_btn.setCheckable(True)
         self.reg_tab_btn.clicked.connect(lambda: self._switch_tab(1))
@@ -296,22 +296,22 @@ class LoginDialog(QDialog):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
-        lbl_u = self._lbl("Username"); self._label_lu = lbl_u; lay.addWidget(lbl_u)
+        lbl_u = self._lbl("用户名"); self._label_lu = lbl_u; lay.addWidget(lbl_u)
         self.login_user = QLineEdit()
-        self.login_user.setPlaceholderText("Enter your username")
+        self.login_user.setPlaceholderText("请输入用户名")
         self.login_user.setMinimumHeight(42)
         lay.addWidget(self.login_user)
 
-        lbl_p = self._lbl("Password"); self._label_lp = lbl_p; lay.addWidget(lbl_p)
+        lbl_p = self._lbl("密码"); self._label_lp = lbl_p; lay.addWidget(lbl_p)
         self.login_pwd = QLineEdit()
-        self.login_pwd.setPlaceholderText("Enter your password")
+        self.login_pwd.setPlaceholderText("请输入密码")
         self.login_pwd.setEchoMode(QLineEdit.Password)
         self.login_pwd.setMinimumHeight(42)
         self.login_pwd.returnPressed.connect(self._do_login)
         lay.addWidget(self.login_pwd)
 
         row = QHBoxLayout()
-        self.remember_cb = QCheckBox("Remember password")
+        self.remember_cb = QCheckBox("记住密码")
         row.addWidget(self.remember_cb)
         row.addStretch()
         lay.addLayout(row)
@@ -321,7 +321,7 @@ class LoginDialog(QDialog):
         self.login_msg.setStyleSheet("background: transparent;")
         lay.addWidget(self.login_msg)
 
-        btn = QPushButton("Login")
+        btn = QPushButton("登 录")
         btn.setObjectName("primary")
         btn.setMinimumHeight(44)
         btn.clicked.connect(self._do_login)
@@ -337,22 +337,22 @@ class LoginDialog(QDialog):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(10)
 
-        lbl_ru = self._lbl("Username"); self._label_ru = lbl_ru; lay.addWidget(lbl_ru)
+        lbl_ru = self._lbl("用户名"); self._label_ru = lbl_ru; lay.addWidget(lbl_ru)
         self.reg_user = QLineEdit()
-        self.reg_user.setPlaceholderText("Set username (4-20 chars, letters/digits)")
+        self.reg_user.setPlaceholderText("设置用户名（4-20位字母/数字）")
         self.reg_user.setMinimumHeight(42)
         lay.addWidget(self.reg_user)
 
-        lbl_rp = self._lbl("Password"); self._label_rp = lbl_rp; lay.addWidget(lbl_rp)
+        lbl_rp = self._lbl("密码"); self._label_rp = lbl_rp; lay.addWidget(lbl_rp)
         self.reg_pwd = QLineEdit()
-        self.reg_pwd.setPlaceholderText("Set password (6+ chars)")
+        self.reg_pwd.setPlaceholderText("设置密码（6位以上）")
         self.reg_pwd.setEchoMode(QLineEdit.Password)
         self.reg_pwd.setMinimumHeight(42)
         lay.addWidget(self.reg_pwd)
 
-        lbl_rp2 = self._lbl("Confirm Password"); self._label_rp2 = lbl_rp2; lay.addWidget(lbl_rp2)
+        lbl_rp2 = self._lbl("确认密码"); self._label_rp2 = lbl_rp2; lay.addWidget(lbl_rp2)
         self.reg_pwd2 = QLineEdit()
-        self.reg_pwd2.setPlaceholderText("Re-enter password")
+        self.reg_pwd2.setPlaceholderText("请再次输入密码")
         self.reg_pwd2.setEchoMode(QLineEdit.Password)
         self.reg_pwd2.setMinimumHeight(42)
         lay.addWidget(self.reg_pwd2)
@@ -362,7 +362,7 @@ class LoginDialog(QDialog):
         self.reg_msg.setStyleSheet("background: transparent;")
         lay.addWidget(self.reg_msg)
 
-        btn = QPushButton("Register & Login")
+        btn = QPushButton("注册并登录")
         btn.setObjectName("primary")
         btn.setMinimumHeight(44)
         btn.clicked.connect(self._do_register)
@@ -398,20 +398,20 @@ class LoginDialog(QDialog):
         u = self.login_user.text().strip()
         p = self.login_pwd.text()
         if not u or not p:
-            self._set_msg(self.login_msg, "Username and password cannot be empty")
+            self._set_msg(self.login_msg, "用户名和密码不能为空")
             return
         users = load_users()
         if u not in users:
-            self._set_msg(self.login_msg, "Account does not exist, please register first")
+            self._set_msg(self.login_msg, "账号不存在，请先注册")
             return
         if users[u]["password"] != hash_password(p):
-            self._set_msg(self.login_msg, "Incorrect password, please try again")
+            self._set_msg(self.login_msg, "密码错误，请重试")
             return
         if self.remember_cb.isChecked():
             save_remembered(u, p)
         else:
             clear_remembered()
-        self._set_msg(self.login_msg, "Welcome back, %s! Entering system..." % u, error=False)
+        self._set_msg(self.login_msg, "欢迎回来，%s！正在进入系统..." % u, error=False)
         QTimer.singleShot(600, self.accept)
 
     def _do_register(self):
@@ -419,24 +419,24 @@ class LoginDialog(QDialog):
         p = self.reg_pwd.text()
         p2 = self.reg_pwd2.text()
         if not u or not p:
-            self._set_msg(self.reg_msg, "Username and password cannot be empty")
+            self._set_msg(self.reg_msg, "用户名和密码不能为空")
             return
         if len(u) < 4:
-            self._set_msg(self.reg_msg, "Username must be at least 4 characters")
+            self._set_msg(self.reg_msg, "用户名至少4个字符")
             return
         if len(p) < 6:
-            self._set_msg(self.reg_msg, "Password must be at least 6 characters")
+            self._set_msg(self.reg_msg, "密码至少6个字符")
             return
         if p != p2:
-            self._set_msg(self.reg_msg, "Passwords do not match")
+            self._set_msg(self.reg_msg, "两次输入的密码不一致")
             return
         users = load_users()
         if u in users:
-            self._set_msg(self.reg_msg, "Username already exists, please choose another")
+            self._set_msg(self.reg_msg, "用户名已存在，请换一个")
             return
         users[u] = {"password": hash_password(p)}
         save_users(users)
-        self._set_msg(self.reg_msg, "Registration successful! Redirecting to login...", error=False)
+        self._set_msg(self.reg_msg, "注册成功！正在跳转到登录页...", error=False)
         self.login_user.setText(u)
         self.login_pwd.setText(p)
         QTimer.singleShot(900, lambda: self._switch_tab(0))
