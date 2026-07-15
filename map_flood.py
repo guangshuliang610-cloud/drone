@@ -157,8 +157,8 @@ class Map(BaseMap):
                     start=10, end=float(np.max(GZ)) - 2, size=6
                 )
             ),
-            lightposition=dict(x=0, y=0, z=1000),
-            lighting=dict(ambient=0.95, diffuse=0.2, specular=0.02, roughness=1.0)
+            lightposition=dict(x=200, y=-200, z=800),
+            lighting=dict(ambient=0.65, diffuse=0.6, specular=0.15, roughness=0.7)
         ))
 
         # Green contour lines — topo_green colormap
@@ -228,19 +228,19 @@ class Map(BaseMap):
         fig = go.Figure(data=traces)
         fig.update_layout(
             scene=dict(
-                bgcolor="#12161B",
-                xaxis=dict(range=list(x_range), gridcolor="#2B3441", color="#A3AFBF", title="X (m)", showbackground=False),
-                yaxis=dict(range=list(y_range), gridcolor="#2B3441", color="#A3AFBF", title="Y (m)", showbackground=False),
-                zaxis=dict(range=list(z_range), gridcolor="#2B3441", color="#A3AFBF", title="Z (m)", showbackground=False),
+                bgcolor="#080B10",
+                xaxis=dict(range=list(x_range), gridcolor="#1A2230", color="#5A6A7E", title="X (m)", showbackground=False),
+                yaxis=dict(range=list(y_range), gridcolor="#1A2230", color="#5A6A7E", title="Y (m)", showbackground=False),
+                zaxis=dict(range=list(z_range), gridcolor="#1A2230", color="#5A6A7E", title="Z (m)", showbackground=False),
                 aspectratio=dict(x=1, y=1, z=0.55),
-                camera=dict(eye=dict(x=1.4, y=-1.8, z=0.8)),
+                camera=dict(eye=dict(x=1.6, y=-1.6, z=1.1)),
             ),
-            paper_bgcolor="#12161B",
+            paper_bgcolor="#080B10",
             margin=dict(l=0, r=0, t=30, b=0),
             showlegend=True,
-            legend=dict(x=0, y=1, bgcolor="rgba(26,32,40,0.8)", font=dict(color="#E6E8EC", size=11)),
-            font=dict(color="#A3AFBF"),
-            title=dict(text=self.name, font=dict(color="#E6E8EC", size=14)),
+            legend=dict(x=0, y=1, bgcolor="rgba(10,14,19,0.9)", font=dict(color="#C8D0DC", size=11)),
+            font=dict(color="#5A6A7E"),
+            title=dict(text=self.name, font=dict(color="#C8D0DC", size=14)),
         )
         return fig
 

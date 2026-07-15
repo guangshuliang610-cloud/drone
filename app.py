@@ -154,8 +154,6 @@ class MainWindow(QMainWindow):
         # ── 导航按钮 ──
         self.nav_buttons = []
 
-        lay.addWidget(NavCaption("MONITOR"))
-        self._add_nav(lay, "[\u25c6]",  "调度总览", "overview")
         lay.addWidget(NavCaption("RESOURCE"))
         self._add_nav(lay, "[\u25c6]",  "物资管理", "material")
         self._add_nav(lay, "[\u25c6]",  "服务区管理", "area")

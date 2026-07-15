@@ -74,26 +74,26 @@ class PlotlyCanvas(QWebEngineView):
         html = """
 <!DOCTYPE html>
 <html><head><meta charset="utf-8">
-<style>body{margin:0;padding:0;background:#12161B;overflow:hidden}
+<style>body{margin:0;padding:0;background:#080B10;overflow:hidden}
 #plot{width:100vw;height:100vh}</style>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head><body>
 <div id="plot"></div>
 <script>
 var layout = {
-  paper_bgcolor:"#12161B",
+  paper_bgcolor:"#080B10",
   scene:{
-    bgcolor:"#12161B",
-    xaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"X (m)"},
-    yaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"Y (m)"},
-    zaxis:{gridcolor:"#2B3441",color:"#A3AFBF",title:"Z (m)"},
-    aspectratio:{x:1,y:1,z:0.55},
-    camera:{eye:{x:1.4,y:-1.8,z:0.8}}
+    bgcolor:"#080B10",
+    xaxis:{gridcolor:"#1A2230",color:"#5A6A7E",title:"X (m)"},
+    yaxis:{gridcolor:"#1A2230",color:"#5A6A7E",title:"Y (m)"},
+    zaxis:{gridcolor:"#1A2230",color:"#5A6A7E",title:"Z (m)"},
+    aspectratio:{x:1,y:1,z:0.5},
+    camera:{eye:{x:1.6,y:-1.6,z:1.1}}
   },
   margin:{l:0,r:0,t:30,b:0},
   showlegend:true,
-  legend:{x:0,y:1,bgcolor:"rgba(26,32,40,0.8)",font:{color:"#E6E8EC",size:11}},
-  font:{color:"#A3AFBF"}
+  legend:{x:0,y:1,bgcolor:"rgba(10,14,19,0.9)",font:{color:"#C8D0DC",size:11}},
+  font:{color:"#5A6A7E"}
 };
 Plotly.newPlot("plot",[],layout,{responsive:true,displayModeBar:false});
 </script></body></html>
