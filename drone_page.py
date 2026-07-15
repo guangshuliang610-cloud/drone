@@ -43,6 +43,9 @@ class DronePage(QWidget):
                 "max_speed": 60.0,
                 "battery": 100,
                 "status": "待命",
+                "m_body": 10.0,
+                "U_bat": 64.8,
+                "C_bat_Ah": 30.0,
             })
         self.drones_data["drones"] = drones[:count]
         self.drones_data["count"] = count
@@ -113,15 +116,16 @@ class DronePage(QWidget):
         layout.addLayout(btn_row)
 
         self.table = QTableWidget()
-        self.table.setColumnCount(7)
+        self.table.setColumnCount(10)
         self.table.setHorizontalHeaderLabels([
             "编号", "名称", "型号", "最大载重(kg)",
-            "航程(km)", "最大速度(km/h)", "状态"
+            "航程(km)", "最大速度(km/h)", "机身重(kg)",
+            "电池(V)", "容量(Ah)", "状态"
         ])
         h = self.table.horizontalHeader()
         h.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         h.setSectionResizeMode(1, QHeaderView.Stretch)
-        for i in range(2, 7):
+        for i in range(2, 10):
             h.setSectionResizeMode(i, QHeaderView.ResizeToContents)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setAlternatingRowColors(True)
@@ -153,7 +157,7 @@ class DronePage(QWidget):
             model_item.setTextAlignment(Qt.AlignCenter)
             self.table.setItem(i, 2, model_item)
 
-            for j, key in enumerate(["max_payload", "max_range", "max_speed"]):
+            for j, key in enumerate(["max_payload", "max_range", "max_speed", "m_body", "U_bat", "C_bat_Ah"]):
                 val_item = QTableWidgetItem("%.1f" % d.get(key, 0))
                 val_item.setTextAlignment(Qt.AlignCenter)
                 val_item.setFont(QFont("Consolas", 14))
@@ -189,7 +193,7 @@ class DronePage(QWidget):
                 item = self.table.item(i, col)
                 if item:
                     drones[i][key] = item.text()
-            for col, key in [(3, "max_payload"), (4, "max_range"), (5, "max_speed")]:
+            for col, key in [(3, "max_payload"), (4, "max_range"), (5, "max_speed"), (6, "m_body"), (7, "U_bat"), (8, "C_bat_Ah")]:
                 item = self.table.item(i, col)
                 if item:
                     try:
