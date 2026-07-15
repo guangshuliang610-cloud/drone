@@ -25,21 +25,25 @@ class Map(BaseMap):
 
     def get_service_areas(self):
         return [
-            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 30.0, "scene": "山区避障场景"},
-            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 31.0, "scene": "山区避障场景"},
-            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 17.0, "scene": "山区避障场景"},
-            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 33.0, "scene": "山区避障场景"},
-            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 40.0, "scene": "山区避障场景"},
+            {"name": "北山服务区", "x": 0.0, "y": 260.0, "z": 32.0, "scene": "山区避障场景"},
+            {"name": "南谷服务区", "x": 0.0, "y": -260.0, "z": 33.0, "scene": "山区避障场景"},
+            {"name": "东岭服务区", "x": 260.0, "y": 0.0, "z": 18.0, "scene": "山区避障场景"},
+            {"name": "西峰服务区", "x": -280.0, "y": -280.0, "z": 35.0, "scene": "山区避障场景"},
+            {"name": "中心营地", "x": 150.0, "y": -60.0, "z": 42.0, "scene": "山区避障场景"},
         ]
+
+
 
     def get_rescue_points(self):
         return [
-            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 73.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 63.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 51.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 58.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
-            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 39.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区A-北坡居民点", "x": -170.0, "y": 200.0, "z": 85.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区B-河谷村庄", "x": 100.0, "y": -80.0, "z": 68.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区C-西岭小学", "x": -140.0, "y": -170.0, "z": 54.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区D-东坡林场", "x": 160.0, "y": 200.0, "z": 85.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "山区避障场景"},
+            {"name": "灾区E-南谷农田", "x": -50.0, "y": -200.0, "z": 45.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "山区避障场景"},
         ]
+
+
 
     def get_bounds(self):
         return ((-320, 320), (-300, 300), (0, 220))
@@ -203,6 +207,7 @@ class Map(BaseMap):
         except Exception:
             pass
 
+        first = True
         for sa in self.get_service_areas():
             traces.append(go.Scatter3d(
                 x=[sa["x"]], y=[sa["y"]], z=[max(sa["z"], 5)],
@@ -211,9 +216,11 @@ class Map(BaseMap):
                             line=dict(color="white", width=1)),
                 text=[sa["name"]], textposition="top center",
                 textfont=dict(color="#FFD700", size=10),
-                name="服务区", showlegend=True
+                name="服务区", showlegend=first
             ))
+            first = False
 
+        first = True
         for rp in self.get_rescue_points():
             traces.append(go.Scatter3d(
                 x=[rp["x"]], y=[rp["y"]], z=[max(rp["z"], 5)],
@@ -222,8 +229,9 @@ class Map(BaseMap):
                             line=dict(color="white", width=1)),
                 text=[rp["name"]], textposition="top center",
                 textfont=dict(color="#FF4444", size=10),
-                name="救援点", showlegend=True
+                name="救援点", showlegend=first
             ))
+            first = False
 
         fig = go.Figure(data=traces)
         fig.update_layout(

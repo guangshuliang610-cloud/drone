@@ -73,21 +73,25 @@ class Map(BaseMap):
 
     def get_service_areas(self):
         return [
-            {"name": "城北服务区", "x": 80.0, "y": 380.0, "z": 0.0, "scene": "城市地震场景"},
+            {"name": "城北服务区", "x": 0.0, "y": 340.0, "z": 0.0, "scene": "城市地震场景"},
             {"name": "城南服务区", "x": 0.0, "y": -340.0, "z": 0.0, "scene": "城市地震场景"},
             {"name": "城东服务区", "x": 340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
             {"name": "城西服务区", "x": -340.0, "y": 0.0, "z": 0.0, "scene": "城市地震场景"},
             {"name": "中心服务区", "x": 200.0, "y": 320.0, "z": 0.0, "scene": "城市地震场景"},
         ]
 
+
+
     def get_rescue_points(self):
         return [
-            {"name": "居民区A-河北区", "x": -320.0, "y": 280.0, "z": 9.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "医院-和平区", "x": 215.0, "y": -100.0, "z": 12.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
-            {"name": "学校-南开区", "x": -250.0, "y": 170.0, "z": 15.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
-            {"name": "商业街-滨江道", "x": 125.0, "y": -50.0, "z": 30.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
-            {"name": "避难所-河西区", "x": -80.0, "y": -225.0, "z": 24.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "居民区A-河北区", "x": -280.0, "y": 250.0, "z": 9.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "医院-和平区", "x": 170.0, "y": -100.0, "z": 12.0, "priority": 0, "priority_text": "紧急(P0)", "note": "", "scene": "城市地震场景"},
+            {"name": "学校-南开区", "x": -200.0, "y": 130.0, "z": 15.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
+            {"name": "商业街-滨江道", "x": 80.0, "y": -50.0, "z": 30.0, "priority": 2, "priority_text": "中(P2)", "note": "", "scene": "城市地震场景"},
+            {"name": "避难所-河西区", "x": -80.0, "y": -180.0, "z": 24.0, "priority": 1, "priority_text": "高(P1)", "note": "", "scene": "城市地震场景"},
         ]
+
+
 
     def get_bounds(self):
         return ((-420, 420), (-390, 390), (0, 160))
@@ -273,6 +277,35 @@ class Map(BaseMap):
                 flatshading=True, lighting=dict(ambient=0.8, diffuse=0.3, specular=0.1),
                 name=otype, showlegend=(otype == 'tower')
             ))
+
+
+        # 服务区
+        first = True
+        for sa in self.get_service_areas():
+            traces.append(go.Scatter3d(
+                x=[sa["x"]], y=[sa["y"]], z=[max(sa["z"], 5)],
+                mode="markers+text",
+                marker=dict(size=10, color="#FFD700", symbol="diamond",
+                            line=dict(color="white", width=1)),
+                text=[sa["name"]], textposition="top center",
+                textfont=dict(color="#FFD700", size=10),
+                name="服务区", showlegend=first
+            ))
+            first = False
+
+        # 救援点
+        first = True
+        for rp in self.get_rescue_points():
+            traces.append(go.Scatter3d(
+                x=[rp["x"]], y=[rp["y"]], z=[max(rp["z"], 5)],
+                mode="markers+text",
+                marker=dict(size=10, color="#FF4444", symbol="cross",
+                            line=dict(color="white", width=1)),
+                text=[rp["name"]], textposition="top center",
+                textfont=dict(color="#FF4444", size=10),
+                name="救援点", showlegend=first
+            ))
+            first = False
 
         fig = go.Figure(data=traces)
         fig.update_layout(

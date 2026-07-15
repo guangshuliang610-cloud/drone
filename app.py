@@ -155,13 +155,13 @@ class MainWindow(QMainWindow):
         self.nav_buttons = []
 
         lay.addWidget(NavCaption("RESOURCE"))
-        self._add_nav(lay, "[\u25c6]",  "物资管理", "material")
-        self._add_nav(lay, "[\u25c6]",  "服务区管理", "area")
-        self._add_nav(lay, "[\u25c6]",  "救援点管理", "rescue")
-        self._add_nav(lay, "[\u25c6]",  "无人机管理", "drone")
+        self._add_nav(lay, "物资管理", "material")
+        self._add_nav(lay, "服务区管理", "area")
+        self._add_nav(lay, "救援点管理", "rescue")
+        self._add_nav(lay, "无人机管理", "drone")
         lay.addWidget(NavCaption("MISSION"))
-        self._add_nav(lay, "[\u25c6]",  "救援调度", "dispatch")
-        self._add_nav(lay, "[\u25c6]",  "任务管理", "task")
+        self._add_nav(lay, "救援调度", "dispatch")
+        self._add_nav(lay, "任务管理", "task")
 
         lay.addStretch()
 
@@ -194,8 +194,8 @@ class MainWindow(QMainWindow):
         lay.addWidget(user_widget)
         return sb
 
-    def _add_nav(self, parent_lay, icon_text: str, label: str, obj_name: str):
-        btn = QPushButton(f"  {icon_text}   {label}")
+    def _add_nav(self, parent_lay, label: str, obj_name: str):
+        btn = QPushButton(f"  {label}")
         btn.setObjectName(obj_name)
         btn.setProperty("navGroup", "sidebar")
         btn.setCheckable(True)
