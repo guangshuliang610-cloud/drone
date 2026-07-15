@@ -7,6 +7,14 @@
   当无人机剩余电量不足以完成下一段飞行时，自动在最近服务区插入换电站航点，
   并施加合理的换电时间惩罚。
 
+物理模型（基于重载救援无人机工程功耗公式）：
+  悬停基准功率: P_h = m_total * g / eta_total
+  爬升功率:     P_climb = K_climb * P_h   (K_climb = 1.25)
+  巡航功率:     P_cruise = K_cruise * P_h  (K_cruise = 0.90)
+  下降功率:     P_descent = K_descent * P_h (K_descent = 0.85)
+  单段能耗:     E_seg = P_seg * t = P_seg * dist_3d / speed
+  可用能量:     E_usable = U_bat * C_bat_Ah * DOD
+
 数据约定（trajectory 字典中有以下字段会被处理）：
   traj["waypoints"]  — [{"pos":[x,y,z], "label":""}, ...]
   traj["total_time"] — 秒（飞行时间，不含换电）
@@ -27,35 +35,38 @@
     return BatteryManager().apply(drones, service_areas, result)
 
 无人机电量参数来源（优先使用 drone 对象的字段）：
-  - battery (float): 当前电量百分比或最大容量（默认 100）
-  - battery_capacity_kWh (float): 物理电池容量（kWh）
-  - max_range (float): 满电最大航程（km）
+  - m_body (float): 机身质量(kg)，默认 10.0
+  - m_payload (float): 载荷质量(kg)，默认 0.0
+  - U_bat (float): 电池标称电压(V)，默认 64.8 (18S)
+  - C_bat_Ah (float): 电池容量(Ah)，默认 30.0
+  - battery_capacity_kWh (float): 物理电池容量(kWh)，备选
+  - max_range (float): 满电最大航程（km），备选
   - max_speed (float): 最大速度（km/h）
-
-物理参数推导优先级：
-  1. 如果 drone["battery_capacity_kWh"] 存在 → capacity_kWh = 该值
-     否则如果 drone["max_range"] 存在 → capacity_kWh = max_range * SPECIFIC_CONSUMPTION
-     否则 → capacity_kWh = BATTERY_CAPACITY_KWH_DEFAULT (0.6 kWh for a typical 10kg drone)
-  2. current_energy = capacity_kWh * (battery / 100)
-     （battery 字段解释为百分比）
-  3. E_CONSUME = capacity_kWh / (max_range * 1000)  (kWh per meter)
-     如果 max_range 不存在 → E_CONSUME = DEFAULT_E_CONSUME_PER_M
-  4. 换电时间：由 drone["model"] 查表，默认 8 分钟 (480 s)
-     (不合理地短，反映"快充"而非"换电池"场景，如需真实换电池 ~2 分钟/块)
+  - battery (float): 当前电量百分比，默认 100
 """
 
 import math
 import numpy as np
 
-# ── 默认物理参数 ──────────────────────────────────────────────
-# 典型 10kg 行业无人机（DJI M30T 同级别）
+# ── 物理常数（重载救援无人机工程标准） ─────────────────────────
+G = 9.81              # 重力加速度(m/s^2)
+ETA_TOTAL = 0.65      # 整机动力总效率（电机+电调+桨）
+K_CLIMB = 1.25        # 爬升功率系数（满载）
+K_CRUISE = 0.90       # 巡航功率系数（满载）
+K_DESCENT = 0.85      # 下降功率系数（满载）
+DOD = 0.80            # 电池可用放电深度（安全预留20%）
+
+# ── 默认无人机参数 ────────────────────────────────────────────
+DEFAULT_M_BODY = 10.0         # 默认机身质量(kg)
+DEFAULT_M_PAYLOAD = 0.0       # 默认载荷(kg)
+DEFAULT_U_BAT = 64.8          # 默认电池电压(V)，18S
+DEFAULT_C_BAT_AH = 30.0       # 默认电池容量(Ah)
+DEFAULT_MAX_RANGE_KM = 15.0   # 默认最大航程(km)
+DEFAULT_MAX_SPEED_KMH = 60.0  # 默认最大速度(km/h)
+
+# ── 兼容旧模型的参数（fallback用） ───────────────────────────
 CAPACITY_DEFAULT_KWH = 0.57   # kWh（M30T 电池标称 ~0.57 kWh）
 SPECIFIC_CONSUMPTION = 38.0   # Wh/km 典型巡航水平（含抗风余量）
-DEFAULT_MAX_RANGE_KM = 15.0    # 默认最大航程 km
-DEFAULT_MAX_SPEED_KMH = 60.0   # 默认最大速度 km/h
-DEFAULT_E_CONSUME_PER_M = CAPACITY_DEFAULT_KWH * 1000 / (DEFAULT_MAX_RANGE_KM * 1000)
-# ≈ 0.038 Wh/m = 0.038 / 3600 Wh/s，但这里我们直接用比例
-# 为简化，我们直接让 E_CONSUME = capacity_kWh / (max_range * 1000) * 100 (百分比/米)
 
 # ── 模型→换电时间（秒）查表 ───────────────────────────────────
 # 数据基于典型行业无人机热换电池操作（工作人员换电池），通常 1~3 分钟
@@ -142,25 +153,23 @@ class BatteryManager:
                 total_time_recomputed = max(total_time_recomputed, traj["total_time"])
                 continue
 
-            # ── 计算电量参数 ──
+            # ── 计算机体物理参数 ──
             drone = drones[t_idx] if t_idx < len(drones) else {}
-            capacity_kwh = self._battery_capacity_kwh(drone)
-            max_range_km = float(drone.get("max_range", DEFAULT_MAX_RANGE_KM))
+
+            # 可用电池能量(Wh)
+            e_usable_wh = self._usable_energy_wh(drone)
+            # 初始可用能量
             battery_pct_start = float(drone.get("battery", 100.0))
-            speed_kmh = float(drone.get("max_speed", DEFAULT_MAX_SPEED_KMH))
-
-            # 初始可用电量（kWh）
-            energy_remaining = capacity_kwh * (battery_pct_start / 100.0)
-
-            # 每米消耗（kWh/m）
-            max_range_m = max_range_km * 1000.0
-            if max_range_m <= 0:
-                e_consume_per_m = DEFAULT_E_CONSUME_PER_M
-            else:
-                e_consume_per_m = capacity_kwh / max_range_m
-
-            # 换电时间（秒）
+            energy_remaining_wh = e_usable_wh * (battery_pct_start / 100.0)
+            # 悬停基准功率(W)
+            p_hover = self._hover_power(drone)
+            # 换电时间(秒)
             swap_time = self._swap_time(drone)
+            # 飞行速度
+            speed_kmh = float(drone.get("max_speed", DEFAULT_MAX_SPEED_KMH))
+            speed_ms = speed_kmh / 3.6
+            if speed_ms <= 0:
+                speed_ms = 16.67
 
             new_waypoints = [waypoints[0]]
             swap_stations = []
@@ -169,29 +178,27 @@ class BatteryManager:
             for i in range(len(waypoints) - 1):
                 p1 = new_waypoints[-1]["pos"]
                 p2 = waypoints[i + 1]["pos"]
-                seg_dist = math.sqrt(sum((p1[j] - p2[j]) ** 2 for j in range(3)))
-                need = seg_dist * e_consume_per_m
+
+                # 计算该段能耗（基于物理模型，区分爬升/巡航/下降）
+                e_seg_wh = self._segment_energy_wh(p1, p2, p_hover, speed_ms)
 
                 # 飞到后剩余
-                remaining_after = energy_remaining - need
-                remaining_pct_after = (remaining_after / capacity_kwh * 100.0) if capacity_kwh > 0 else 0.0
+                remaining_after_wh = energy_remaining_wh - e_seg_wh
+                remaining_pct_after = (remaining_after_wh / e_usable_wh * 100.0) if e_usable_wh > 0 else 0.0
 
-                if remaining_after < 0 or remaining_pct_after < FORCE_SWAP_BELOW_PCT:
+                if remaining_after_wh < 0 or remaining_pct_after < FORCE_SWAP_BELOW_PCT:
                     # ── 电量不足，找最近服务区换电 ──
                     cur_pos = new_waypoints[-1]["pos"]
                     sa_idx = self._nearest_sa(cur_pos, sa_coords)
 
-                    # 飞向服务区的消耗
+                    # 飞向服务区的能耗
                     sa_pos = sa_coords[sa_idx]
-                    fly_to_sa_dist = math.sqrt(
-                        sum((cur_pos[j] - sa_pos[j]) ** 2 for j in range(3))
-                    )
-                    fly_to_sa_energy = fly_to_sa_dist * e_consume_per_m
+                    fly_to_sa_energy_wh = self._segment_energy_wh(cur_pos, sa_pos, p_hover, speed_ms)
 
                     # 如果飞向服务区都不够（极端：当前已在低电量且服务区很远）
                     # 还是飞向服务区，视为服务区带有移动充电车兜底
-                    if energy_remaining < fly_to_sa_energy:
-                        fly_to_sa_energy = energy_remaining * 0.9
+                    if energy_remaining_wh < fly_to_sa_energy_wh:
+                        fly_to_sa_energy_wh = energy_remaining_wh * 0.9
 
                     # 插入换电站航点
                     sa_pos_list = list(sa_pos)
@@ -207,16 +214,16 @@ class BatteryManager:
                     })
 
                     # 扣减飞向服务区所耗，然后换电
-                    energy_remaining -= fly_to_sa_energy
-                    energy_remaining = capacity_kwh  # 满电
+                    energy_remaining_wh -= fly_to_sa_energy_wh
+                    energy_remaining_wh = e_usable_wh  # 满电
 
                     swap_time_accum += swap_time
 
                 # 飞行到下一航点
                 new_waypoints.append(waypoints[i + 1])
-                energy_remaining -= need
-                if energy_remaining < 0:
-                    energy_remaining = 0.0
+                energy_remaining_wh -= e_seg_wh
+                if energy_remaining_wh < 0:
+                    energy_remaining_wh = 0.0
 
             # 更新轨迹字段
             traj["waypoints"] = new_waypoints
@@ -231,16 +238,13 @@ class BatteryManager:
                     (new_waypoints[k]["pos"][j] - new_waypoints[k + 1]["pos"][j]) ** 2
                     for j in range(3)
                 ))
-            speed_ms = speed_kmh / 3.6
-            if speed_ms <= 0:
-                speed_ms = 16.67
             flight_time = total_dist / speed_ms
 
             traj["total_distance"] = round(total_dist, 2)
             traj["total_time"] = round(flight_time + swap_time_accum, 2)
             traj["total_swap_time"] = round(swap_time_accum, 2)
             traj["battery_remaining_pct"] = round(
-                (energy_remaining / capacity_kwh * 100.0) if capacity_kwh > 0 else 0.0, 1
+                (energy_remaining_wh / e_usable_wh * 100.0) if e_usable_wh > 0 else 0.0, 1
             )
 
             total_swaps += len(swap_stations)
@@ -270,26 +274,92 @@ class BatteryManager:
         return result
 
     # ──────────────────────────────────────────────────────────
-    #  内部工具
+    #  物理模型核心方法
     # ──────────────────────────────────────────────────────────
 
     @staticmethod
-    def _battery_capacity_kwh(drone):
-        """推测电池容量（kWh）。优先使用显式字段。"""
-        cap = drone.get("battery_capacity_kWh")
-        if cap is not None:
+    def _hover_power(drone):
+        """
+        计算悬停基准功率 P_h = m_total * g / eta_total
+        单位：瓦特(W)
+        """
+        m_body = float(drone.get("m_body", DEFAULT_M_BODY))
+        m_payload = float(drone.get("m_payload", DEFAULT_M_PAYLOAD))
+        m_total = m_body + m_payload
+        return m_total * G / ETA_TOTAL
+
+    @staticmethod
+    def _usable_energy_wh(drone):
+        """
+        计算电池可用能量 E_usable = U_bat * C_bat_Ah * DOD
+        单位：瓦时(Wh)
+        兼容旧字段 battery_capacity_kWh 和 max_range
+        """
+        # 优先使用 U_bat * C_bat_Ah
+        u_bat = drone.get("U_bat")
+        c_bat_ah = drone.get("C_bat_Ah")
+        if u_bat is not None and c_bat_ah is not None:
             try:
-                return float(cap)
+                return float(u_bat) * float(c_bat_ah) * DOD
             except (ValueError, TypeError):
                 pass
-        # 根据 max_range 和 SPECIFIC_CONSUMPTION 推算
+        # 备选：battery_capacity_kWh
+        cap_kwh = drone.get("battery_capacity_kWh")
+        if cap_kwh is not None:
+            try:
+                return float(cap_kwh) * 1000.0 * DOD  # kWh -> Wh
+            except (ValueError, TypeError):
+                pass
+        # 最后备选：max_range * SPECIFIC_CONSUMPTION
         max_range_km = drone.get("max_range")
         if max_range_km is not None:
             try:
-                return float(max_range_km) * SPECIFIC_CONSUMPTION / 1000.0
+                return float(max_range_km) * SPECIFIC_CONSUMPTION * DOD
             except (ValueError, TypeError):
                 pass
-        return CAPACITY_DEFAULT_KWH
+        # 默认
+        return CAPACITY_DEFAULT_KWH * 1000.0 * DOD
+
+    @staticmethod
+    def _segment_energy_wh(p1, p2, p_hover, speed_ms):
+        """
+        计算单段能耗（物理模型，区分爬升/巡航/下降）
+        E_seg = P_seg * t_seg = K * P_h * (dist_3d / speed)
+        单位：瓦时(Wh)
+        """
+        dx = p2[0] - p1[0]
+        dy = p2[1] - p1[1]
+        dz = p2[2] - p1[2]
+        dist_3d = math.sqrt(dx * dx + dy * dy + dz * dz)
+
+        if dist_3d < 1e-6 or speed_ms <= 0:
+            return 0.0
+
+        # 根据高度变化选择工况系数
+        if dz > 0.1:
+            K = K_CLIMB      # 爬升
+        elif dz < -0.1:
+            K = K_DESCENT    # 下降
+        else:
+            K = K_CRUISE     # 水平巡航
+
+        p_seg = K * p_hover          # 该段功率(W)
+        t_seg = dist_3d / speed_ms   # 该段时长(s)
+        e_seg = p_seg * t_seg / 3600.0  # Wh = W * s / 3600
+
+        return e_seg
+
+    @staticmethod
+    def _segment_time_s(p1, p2, speed_ms):
+        """计算单段飞行时间(秒)"""
+        dist_3d = math.sqrt(sum((p1[j] - p2[j]) ** 2 for j in range(3)))
+        if speed_ms <= 0:
+            return 0.0
+        return dist_3d / speed_ms
+
+    # ──────────────────────────────────────────────────────────
+    #  内部工具
+    # ──────────────────────────────────────────────────────────
 
     @staticmethod
     def _swap_time(drone):
@@ -342,7 +412,7 @@ class BatteryManager:
 
     @staticmethod
     def render_swap_mPL(ax, swap_stations, color="#00E676"):
-        """在 matplotlib axes 上画换电站标记（∎ 绿方块）。"""
+        """在 matplotlib axes 上画换电站标记（绿方块）。"""
         for swap in swap_stations:
             sp = swap["pos"]
             ax.scatter(
@@ -366,7 +436,7 @@ class BatteryManager:
                     size=12, color="#00E676", symbol="square",
                     line=dict(color="white", width=2),
                 ),
-                text=["\u26a1"],  # ⚡
+                text=["\u26a1"],
                 textposition="top center",
                 textfont=dict(size=14, color="#00E676"),
                 name=f"换电站-{swap.get('name', '')}",

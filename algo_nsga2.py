@@ -27,10 +27,12 @@ class Algorithm(BaseAlgorithm):
     RISK_TAU = 60.0       # 静态势风险衰减距离(m)
     TERRAIN_MARGIN = 5.0  # 地形安全余量(m)
 
-    # ── 能耗模型参数 ──
-    ENERGY_BASE = 0.0008     # 基础能耗率(kWh/m)
-    ENERGY_WEIGHT = 0.00005  # 载重能耗系数(kWh/m/kg)
-    ENERGY_CLIMB = 0.002     # 爬升能耗率(kWh/m)
+    # ── 能耗模型参数（重载旱援无人机工程功耗公式）──
+    G = 9.81              # 重力加速度(m/s^2)
+    ETA_TOTAL = 0.65      # 整机力力总效率（电机+电调+桨）
+    K_CLIMB = 1.25        # 爬升功率系数（满载）
+    K_CRUISE = 0.90       # 巡航功率系数（满载）
+    K_DESCENT = 0.85      # 下降功率系数（满载）
 
     # ── 候选路径参数 ──
     SAFE_Z_OFFSET = 25.0   # 较安全路径高度偏移(m)
@@ -166,7 +168,7 @@ class Algorithm(BaseAlgorithm):
                     "pareto_rank": rank,
                     "f1_time": round(f1, 2),
                     "f2_risk": round(f2, 4),
-                    "f3_energy": round(f3, 5),
+                    "f3_energy_wh": round(f3, 2),
                     "is_recommended": is_recommended,
                     "candidate_label": candidate_label,
                 }
@@ -338,40 +340,61 @@ class Algorithm(BaseAlgorithm):
 
     def _calc_energy(self, path, drone, mat_names, all_materials):
         """
-        f3 = 总能耗(kWh)
-        - 基础能耗：距离 × 基础能耗率
-        - 载重额外能耗：距离 × 载重 × 系数
-        - 爬升额外能耗：总爬升高度 × 爬升系数
+        f3 = 总能耗(Wh)
+        基于重载旱援无人机工程功耗公式：
+          P_h = m_total * g / eta_total
+          P_seg = K * P_h  (K depends on climb/cruise/descent)
+          E_seg = P_seg * t = P_seg * dist_3d / speed
         """
         if not path or len(path) < 2:
             return 0.0
 
-        total_dist = sum(
-            math.sqrt(sum((path[i][j] - path[i + 1][j]) ** 2 for j in range(3)))
-            for i in range(len(path) - 1)
-        )
+        # 机体物理参数
+        m_body = float(drone.get("m_body", 10.0))
+        m_payload = float(drone.get("m_payload", 0.0))
+        if m_payload == 0.0 and mat_names and all_materials:
+            m_payload = sum(
+                m.get("weight", 0.0)
+                for m in all_materials
+                if m["name"] in mat_names
+            )
+        m_total = m_body + m_payload
 
-        # 载重
-        payload = sum(
-            m.get("weight", 0.0)
-            for m in all_materials
-            if m["name"] in mat_names
-        )
+        # 悬停基准功率(W)
+        p_hover = m_total * self.G / self.ETA_TOTAL
 
-        # 基础能耗
-        energy = total_dist * self.ENERGY_BASE
+        # 飞行速度(m/s)
+        speed_kmh = float(drone.get("max_speed", 60.0))
+        speed_ms = speed_kmh / 3.6
+        if speed_ms <= 0:
+            speed_ms = 16.67
 
-        # 载重额外能耗
-        energy += total_dist * payload * self.ENERGY_WEIGHT
+        # 逐段累加能耗（区分爬升/巡航/下降）
+        total_energy_wh = 0.0
+        for i in range(len(path) - 1):
+            p1 = path[i]
+            p2 = path[i + 1]
+            dx = p2[0] - p1[0]
+            dy = p2[1] - p1[1]
+            dz = p2[2] - p1[2]
+            dist_3d = math.sqrt(dx * dx + dy * dy + dz * dz)
 
-        # 爬升额外能耗
-        climb = sum(
-            max(0.0, path[i + 1][2] - path[i][2])
-            for i in range(len(path) - 1)
-        )
-        energy += climb * self.ENERGY_CLIMB
+            if dist_3d < 1e-6:
+                continue
 
-        return energy
+            if dz > 0.1:
+                K = self.K_CLIMB
+            elif dz < -0.1:
+                K = self.K_DESCENT
+            else:
+                K = self.K_CRUISE
+
+            p_seg = K * p_hover
+            t_seg = dist_3d / speed_ms
+            e_seg = p_seg * t_seg / 3600.0
+            total_energy_wh += e_seg
+
+        return total_energy_wh
 
     # ============================================================
     #  非支配排序 + Knee Point
