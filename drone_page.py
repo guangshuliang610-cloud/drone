@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 无人机管理页面
 文件：drone_page.py
 """
@@ -13,7 +13,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 from config import (
-    TEXT_MAIN, TEXT_SUB, ACCENT, SUCCESS, ERROR, WARNING,
+    TEXT_MAIN, TEXT_SUB, ACCENT, SUCCESS, ERROR, WARNING, WHITE,
+    BORDER, PANEL_BG, INPUT_BG,
     DRONES_FILE
 )
 from utils import load_json, save_json, hc
@@ -56,13 +57,21 @@ class DronePage(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
 
         header = QHBoxLayout()
+        header.setSpacing(8)
+        title_wrap = QVBoxLayout()
+        title_wrap.setSpacing(4)
         self.title_label = QLabel("🤖 无人机管理")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Microsoft YaHei", 20, QFont.Bold))
+        self.title_label.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {WHITE}; background: transparent;")
+        title_wrap.addWidget(self.title_label)
+        self.subtitle_label = QLabel("管理无人机编队数量、型号与状态")
+        self.subtitle_label.setFont(QFont("Microsoft YaHei", 12))
+        self.subtitle_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
+        title_wrap.addWidget(self.subtitle_label)
+        header.addLayout(title_wrap)
         header.addStretch()
         self.count_label = QLabel("")
-        self.count_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        self.count_label.setStyleSheet(f"font-size: 12px; color: {TEXT_SUB}; background: transparent;")
         header.addWidget(self.count_label)
         layout.addLayout(header)
 
@@ -73,7 +82,7 @@ class DronePage(QWidget):
         self.count_spin = QSpinBox()
         self.count_spin.setRange(1, 100)
         self.count_spin.setValue(self.drones_data.get("count", 3))
-        self.count_spin.setMinimumHeight(40)
+        self.count_spin.setMinimumHeight(36)
         self.count_spin.setMinimumWidth(120)
         cg.addWidget(self.count_spin)
         apply_btn = QPushButton("✔ 应用数量")
@@ -84,7 +93,7 @@ class DronePage(QWidget):
         cg.addWidget(QLabel("批量状态："))
         self.batch_combo = QComboBox()
         self.batch_combo.addItems(["待命", "执行中", "充电中", "维修中", "离线"])
-        self.batch_combo.setMinimumHeight(40)
+        self.batch_combo.setMinimumHeight(36)
         cg.addWidget(self.batch_combo)
         batch_btn = QPushButton("全部应用")
         batch_btn.clicked.connect(self._batch_status)
@@ -197,4 +206,4 @@ class DronePage(QWidget):
             self._ensure_drones()
             self.count_spin.setValue(3)
             self._refresh_table()
-            save_json(DRONES_FILE, self.drones_data)
+            save_json(DRONES_FILE, self.drones_data)

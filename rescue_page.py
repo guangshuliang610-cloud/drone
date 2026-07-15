@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 救援点管理页面
 文件：rescue_page.py
 """
@@ -16,7 +16,8 @@ from PyQt5.QtGui import QFont
 from config import (
     SCENES,
     PRIORITY_MAP, PRIORITY_COLORS, TEXT_MAIN, TEXT_SUB, ACCENT,
-    RESCUE_POINTS_FILE, DEFAULT_RESCUE_POINTS, CONTOUR_DATA_FILE
+    BORDER, SUCCESS, ERROR, WARNING, PANEL_BG, INPUT_BG,
+    RESCUE_POINTS_FILE, DEFAULT_RESCUE_POINTS, CONTOUR_DATA_FILE, WHITE
 )
 from utils import load_json, save_json, hc
 
@@ -180,7 +181,7 @@ class RescuePointEditDialog(QDialog):
 
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("例如：灾区A - 居民区、中心医院...")
-        self.name_edit.setMinimumHeight(40)
+        self.name_edit.setMinimumHeight(36)
         form.addRow("救援点名称：", self.name_edit)
 
         bounds = SCENE_BOUNDS.get(self.scene, (-320, 320, -300, 300, 0, 220))
@@ -194,7 +195,7 @@ class RescuePointEditDialog(QDialog):
         self.x_spin.setRange(x_min, x_max)
         self.x_spin.setDecimals(1)
         self.x_spin.setPrefix("X: ")
-        self.x_spin.setMinimumHeight(40)
+        self.x_spin.setMinimumHeight(36)
         self.x_spin.valueChanged.connect(self._update_z_from_terrain)
         cl.addWidget(self.x_spin)
 
@@ -202,7 +203,7 @@ class RescuePointEditDialog(QDialog):
         self.y_spin.setRange(y_min, y_max)
         self.y_spin.setDecimals(1)
         self.y_spin.setPrefix("Y: ")
-        self.y_spin.setMinimumHeight(40)
+        self.y_spin.setMinimumHeight(36)
         self.y_spin.valueChanged.connect(self._update_z_from_terrain)
         cl.addWidget(self.y_spin)
 
@@ -210,7 +211,7 @@ class RescuePointEditDialog(QDialog):
         self.z_spin.setRange(z_min, z_max)
         self.z_spin.setDecimals(1)
         self.z_spin.setPrefix("Z: ")
-        self.z_spin.setMinimumHeight(40)
+        self.z_spin.setMinimumHeight(36)
         self.z_spin.setReadOnly(True)
         self.z_spin.setStyleSheet("QDoubleSpinBox { color: #888; background: #1A1F26; }")
         cl.addWidget(self.z_spin)
@@ -225,7 +226,7 @@ class RescuePointEditDialog(QDialog):
         self.floor_spin = QSpinBox()
         self.floor_spin.setRange(1, 50)
         self.floor_spin.setValue(1)
-        self.floor_spin.setMinimumHeight(40)
+        self.floor_spin.setMinimumHeight(36)
         self.floor_spin.setMinimumWidth(100)
         self.floor_spin.setSuffix(" 楼")
         self.floor_spin.valueChanged.connect(self._on_floor_changed)
@@ -250,13 +251,13 @@ class RescuePointEditDialog(QDialog):
         pl = QHBoxLayout(pri_combo_widget)
         self.pri_combo = QComboBox()
         self.pri_combo.addItems(PRIORITY_MAP.keys())
-        self.pri_combo.setMinimumHeight(40)
+        self.pri_combo.setMinimumHeight(36)
         pl.addWidget(self.pri_combo)
         form.addRow("配送优先级：", pri_combo_widget)
 
         self.note_edit = QLineEdit()
         self.note_edit.setPlaceholderText("可选，填写特殊情况说明")
-        self.note_edit.setMinimumHeight(40)
+        self.note_edit.setMinimumHeight(36)
         form.addRow("备    注：", self.note_edit)
 
         layout.addLayout(form)
@@ -365,10 +366,18 @@ class RescuePointPage(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
 
         header = QHBoxLayout()
+        header.setSpacing(8)
+        title_wrap = QVBoxLayout()
+        title_wrap.setSpacing(4)
         self.title_label = QLabel("📍 救援点管理")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Microsoft YaHei", 20, QFont.Bold))
+        self.title_label.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {WHITE}; background: transparent;")
+        title_wrap.addWidget(self.title_label)
+        self.subtitle_label = QLabel("设置救援点坐标、优先级与备注信息")
+        self.subtitle_label.setFont(QFont("Microsoft YaHei", 12))
+        self.subtitle_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
+        title_wrap.addWidget(self.subtitle_label)
+        header.addLayout(title_wrap)
         header.addStretch()
 
         self.scene_combo = QComboBox()
@@ -380,7 +389,7 @@ class RescuePointPage(QWidget):
         header.addWidget(self.scene_combo)
 
         self.stats_label = QLabel("")
-        self.stats_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        self.stats_label.setStyleSheet(f"font-size: 12px; color: {TEXT_SUB}; background: transparent;")
         header.addWidget(self.stats_label)
         layout.addLayout(header)
 
@@ -510,4 +519,4 @@ class RescuePointPage(QWidget):
         for i, ap in enumerate(self.all_points):
             if ap is p:
                 return i
-        return None
+        return None

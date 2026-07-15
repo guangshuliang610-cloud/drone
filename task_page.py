@@ -19,7 +19,7 @@ from PyQt5.QtGui import QFont
 
 from config import (
     SCENES, DARK_BG, PANEL_BG, ACCENT, ACCENT_DARK, BORDER,
-    TEXT_MAIN, TEXT_SUB, SUCCESS, ERROR, WARNING,
+    TEXT_MAIN, TEXT_SUB, SUCCESS, ERROR, WARNING, WHITE, INPUT_BG,
     PRIORITY_MAP, TASKS_FILE, MAPS_FILE, ALGORITHMS_FILE,
     DEFAULT_MAPS, DEFAULT_ALGORITHMS, BASE_DIR
 )
@@ -187,10 +187,18 @@ class TaskPage(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
 
         header = QHBoxLayout()
+        header.setSpacing(8)
+        title_wrap = QVBoxLayout()
+        title_wrap.setSpacing(4)
         self.title_label = QLabel("📋 任务管理")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Microsoft YaHei", 20, QFont.Bold))
+        self.title_label.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {WHITE}; background: transparent;")
+        title_wrap.addWidget(self.title_label)
+        self.subtitle_label = QLabel("创建与调度任务，对比算法路径规划结果")
+        self.subtitle_label.setFont(QFont("Microsoft YaHei", 12))
+        self.subtitle_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
+        title_wrap.addWidget(self.subtitle_label)
+        header.addLayout(title_wrap)
 
         self.scene_combo = QComboBox()
         self.scene_combo.addItems(SCENES)
@@ -202,7 +210,7 @@ class TaskPage(QWidget):
 
         header.addStretch()
         self.stats_label = QLabel("")
-        self.stats_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        self.stats_label.setStyleSheet(f"font-size: 12px; color: {TEXT_SUB}; background: transparent;")
         header.addWidget(self.stats_label)
         layout.addLayout(header)
 

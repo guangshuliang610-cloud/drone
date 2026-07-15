@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 物资管理页面
 文件：material_page.py
 """
@@ -13,8 +13,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 from config import (
-    SCENES, PRIORITY_MAP, PRIORITY_COLORS, TEXT_MAIN, TEXT_SUB, ACCENT,
-    BORDER, MATERIALS_FILE, DEFAULT_MATERIALS,
+    SCENES, PRIORITY_MAP, PRIORITY_COLORS, TEXT_MAIN, TEXT_SUB, ACCENT, WHITE,
+    BORDER, SUCCESS, ERROR, WARNING, PANEL_BG, INPUT_BG,
+    MATERIALS_FILE, DEFAULT_MATERIALS,
     SERVICE_AREAS_FILE, RESCUE_POINTS_FILE,
     DEFAULT_SERVICE_AREAS, DEFAULT_RESCUE_POINTS
 )
@@ -52,12 +53,12 @@ class MaterialDialog(QDialog):
 
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("例：医疗急救包、饮用水、帐篷...")
-        self.name_edit.setMinimumHeight(40)
+        self.name_edit.setMinimumHeight(36)
         form.addRow("物资名称：", self.name_edit)
 
         self.priority_combo = QComboBox()
         self.priority_combo.addItems(PRIORITY_MAP.keys())
-        self.priority_combo.setMinimumHeight(40)
+        self.priority_combo.setMinimumHeight(36)
         form.addRow("配送优先级：", self.priority_combo)
 
         self.weight_spin = QDoubleSpinBox()
@@ -65,30 +66,30 @@ class MaterialDialog(QDialog):
         self.weight_spin.setSuffix(" kg")
         self.weight_spin.setDecimals(1)
         self.weight_spin.setValue(1.0)
-        self.weight_spin.setMinimumHeight(40)
+        self.weight_spin.setMinimumHeight(36)
         form.addRow("物资重量：", self.weight_spin)
 
         self.quantity_spin = QSpinBox()
         self.quantity_spin.setRange(1, 10000)
         self.quantity_spin.setValue(1)
-        self.quantity_spin.setMinimumHeight(40)
+        self.quantity_spin.setMinimumHeight(36)
         form.addRow("物资数量：", self.quantity_spin)
 
         self.area_combo = QComboBox()
         for a in self.service_areas:
             self.area_combo.addItem(a.get("name", ""), a)
-        self.area_combo.setMinimumHeight(40)
+        self.area_combo.setMinimumHeight(36)
         form.addRow("初始服务区：", self.area_combo)
 
         self.rescue_combo = QComboBox()
         for r in self.rescue_points:
             self.rescue_combo.addItem(r.get("name", ""), r)
-        self.rescue_combo.setMinimumHeight(40)
+        self.rescue_combo.setMinimumHeight(36)
         form.addRow("配送救援点：", self.rescue_combo)
 
         self.note_edit = QLineEdit()
         self.note_edit.setPlaceholderText("可选，填写特殊要求...")
-        self.note_edit.setMinimumHeight(40)
+        self.note_edit.setMinimumHeight(36)
         form.addRow("备    注：", self.note_edit)
 
         layout.addLayout(form)
@@ -152,10 +153,18 @@ class MaterialPage(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
 
         header = QHBoxLayout()
+        header.setSpacing(8)
+        title_wrap = QVBoxLayout()
+        title_wrap.setSpacing(4)
         self.title_label = QLabel("📦 物资管理")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Microsoft YaHei", 20, QFont.Bold))
+        self.title_label.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {WHITE}; background: transparent;")
+        title_wrap.addWidget(self.title_label)
+        self.subtitle_label = QLabel("管理应急物资库存、配送优先级与重量信息")
+        self.subtitle_label.setFont(QFont("Microsoft YaHei", 12))
+        self.subtitle_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
+        title_wrap.addWidget(self.subtitle_label)
+        header.addLayout(title_wrap)
 
         self.search_edit = QLineEdit()
         self.search_edit.setPlaceholderText("🔍 搜索物资名称...")
@@ -183,7 +192,7 @@ class MaterialPage(QWidget):
 
         header.addStretch()
         self.stats_label = QLabel("")
-        self.stats_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        self.stats_label.setStyleSheet(f"font-size: 12px; color: {TEXT_SUB}; background: transparent;")
         header.addWidget(self.stats_label)
         layout.addLayout(header)
 
@@ -354,4 +363,4 @@ class MaterialPage(QWidget):
         for i, am in enumerate(self.all_materials):
             if am is m:
                 return i
-        return None
+        return None

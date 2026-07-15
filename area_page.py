@@ -1,4 +1,4 @@
-﻿"""
+"""
 应急无人机调度系统 — 服务区管理页面
 文件：area_page.py
 """
@@ -14,7 +14,8 @@ from PyQt5.QtGui import QFont
 
 from config import (
     SCENES,
-    TEXT_MAIN, TEXT_SUB, ACCENT, BORDER,
+    TEXT_MAIN, TEXT_SUB, ACCENT, WHITE, BORDER,
+    SUCCESS, ERROR, WARNING, PANEL_BG, INPUT_BG,
     SERVICE_AREAS_FILE, DEFAULT_SERVICE_AREAS
 )
 from utils import load_json, save_json, hc
@@ -57,7 +58,7 @@ class ServiceAreaEditDialog(QDialog):
 
         self.name_edit = QLineEdit()
         self.name_edit.setPlaceholderText("例：北区服务区、一号集结点...")
-        self.name_edit.setMinimumHeight(40)
+        self.name_edit.setMinimumHeight(36)
         form.addRow("名    称：", self.name_edit)
 
         bounds = SCENE_BOUNDS.get(self.scene, (-320, 320, -300, 300, 0, 220))
@@ -70,21 +71,21 @@ class ServiceAreaEditDialog(QDialog):
         self.x_spin.setRange(x_min, x_max)
         self.x_spin.setDecimals(1)
         self.x_spin.setPrefix("X: ")
-        self.x_spin.setMinimumHeight(40)
+        self.x_spin.setMinimumHeight(36)
         self.x_spin.valueChanged.connect(self._update_z_auto)
         cl.addWidget(self.x_spin)
         self.y_spin = QDoubleSpinBox()
         self.y_spin.setRange(y_min, y_max)
         self.y_spin.setDecimals(1)
         self.y_spin.setPrefix("Y: ")
-        self.y_spin.setMinimumHeight(40)
+        self.y_spin.setMinimumHeight(36)
         self.y_spin.valueChanged.connect(self._update_z_auto)
         cl.addWidget(self.y_spin)
         self.z_spin = QDoubleSpinBox()
         self.z_spin.setRange(z_min, z_max)
         self.z_spin.setDecimals(1)
         self.z_spin.setPrefix("Z: ")
-        self.z_spin.setMinimumHeight(40)
+        self.z_spin.setMinimumHeight(36)
         self.z_spin.setReadOnly(True)
         self.z_spin.setStyleSheet("QDoubleSpinBox { background-color: #222830; color: #7C8796; }")
         cl.addWidget(self.z_spin)
@@ -98,7 +99,7 @@ class ServiceAreaEditDialog(QDialog):
         self.floor_spin = QSpinBox()
         self.floor_spin.setRange(1, 1)
         self.floor_spin.setValue(1)
-        self.floor_spin.setMinimumHeight(40)
+        self.floor_spin.setMinimumHeight(36)
         self.floor_spin.setMinimumWidth(100)
         self.floor_spin.valueChanged.connect(self._on_floor_changed)
         fl.addWidget(self.floor_spin)
@@ -233,10 +234,18 @@ class ServiceAreaPage(QWidget):
         layout.setContentsMargins(20, 16, 20, 16)
 
         header = QHBoxLayout()
+        header.setSpacing(8)
+        title_wrap = QVBoxLayout()
+        title_wrap.setSpacing(4)
         self.title_label = QLabel("🏗 服务区管理")
-        self.title_label.setFont(QFont("Microsoft YaHei", 18, QFont.Bold))
-        self.title_label.setStyleSheet(f"color: {TEXT_MAIN}; background: transparent;")
-        header.addWidget(self.title_label)
+        self.title_label.setFont(QFont("Microsoft YaHei", 20, QFont.Bold))
+        self.title_label.setStyleSheet(f"font-size: 18px; font-weight: 700; color: {WHITE}; background: transparent;")
+        title_wrap.addWidget(self.title_label)
+        self.subtitle_label = QLabel("配置服务区位置坐标与适用场景")
+        self.subtitle_label.setFont(QFont("Microsoft YaHei", 12))
+        self.subtitle_label.setStyleSheet(f"color: {TEXT_SUB}; background: transparent;")
+        title_wrap.addWidget(self.subtitle_label)
+        header.addLayout(title_wrap)
         header.addStretch()
 
         self.scene_combo = QComboBox()
@@ -248,7 +257,7 @@ class ServiceAreaPage(QWidget):
         header.addWidget(self.scene_combo)
 
         self.stats_label = QLabel("")
-        self.stats_label.setStyleSheet(f"color: {TEXT_SUB}; font-size: 14px; background: transparent;")
+        self.stats_label.setStyleSheet(f"font-size: 12px; color: {TEXT_SUB}; background: transparent;")
         header.addWidget(self.stats_label)
         layout.addLayout(header)
 
@@ -362,4 +371,4 @@ class ServiceAreaPage(QWidget):
         for i, aa in enumerate(self.all_areas):
             if aa is a:
                 return i
-        return None
+        return None
